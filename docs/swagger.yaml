@@ -1,0 +1,422 @@
+basePath: /
+definitions:
+  domain.Resource:
+    properties:
+      can_download:
+        type: boolean
+      current_download_url:
+        type: string
+      custom_fields: {}
+      description:
+        type: string
+      download_count:
+        type: integer
+      external_url:
+        type: string
+      icon_url:
+        type: string
+      last_update:
+        type: integer
+      license:
+        type: string
+      license_url:
+        type: string
+      rating_avg:
+        type: number
+      rating_count:
+        type: integer
+      rating_weighted:
+        type: number
+      resource_category_id:
+        type: integer
+      resource_date:
+        type: integer
+      resource_id:
+        type: integer
+      resource_state:
+        type: string
+      resource_type:
+        type: string
+      review_count:
+        type: integer
+      tag_line:
+        type: string
+      title:
+        type: string
+      update_count:
+        type: integer
+      version:
+        type: string
+      view_count:
+        type: integer
+      view_url:
+        type: string
+    type: object
+  domain.ResourceCategory:
+    properties:
+      description:
+        type: string
+      display_order:
+        type: integer
+      last_update:
+        type: integer
+      parent_category_id:
+        type: integer
+      resource_category_id:
+        type: integer
+      resource_count:
+        type: integer
+      title:
+        type: string
+    type: object
+  domain.ResourceFile:
+    properties:
+      filename:
+        type: string
+      id:
+        type: integer
+      size:
+        type: integer
+    type: object
+  domain.ResourceReview:
+    properties:
+      message:
+        type: string
+      rating:
+        type: integer
+      rating_date:
+        type: integer
+      rating_state:
+        type: string
+      resource_id:
+        type: integer
+      resource_rating_id:
+        type: integer
+      resource_version_id:
+        type: integer
+    type: object
+  domain.ResourceVersion:
+    properties:
+      download_count:
+        type: integer
+      files:
+        items:
+          $ref: '#/definitions/domain.ResourceFile'
+        type: array
+      release_date:
+        type: integer
+      resource_id:
+        type: integer
+      resource_version_id:
+        type: integer
+      version_string:
+        type: string
+    type: object
+  domain.User:
+    properties:
+      avatar_urls: {}
+      email:
+        type: string
+      gravatar:
+        type: string
+      is_staff:
+        type: boolean
+      profile_banner_urls: {}
+      user_id:
+        type: integer
+      user_title:
+        type: string
+      username:
+        type: string
+      view_url:
+        type: string
+    type: object
+  remote.RawUserAuthResponse:
+    properties:
+      login_token:
+        type: string
+      tfa_providers:
+        type: string
+      tfa_required:
+        type: boolean
+      user:
+        $ref: '#/definitions/domain.User'
+    type: object
+  router.RequestError:
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8080
+info:
+  contact:
+    name: Rafael Galvan
+    url: http://www.rigsofrods.org
+  license:
+    name: GNU GPL v3
+    url: https://www.gnu.org/licenses/gpl-3.0.en.html
+  title: Rigs of Rods API
+  version: "2.0"
+paths:
+  /auth/login/:
+    post:
+      consumes:
+      - application/json
+      description: Validates provided username and password to authenticate the user.
+        No session management is handled.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/remote.RawUserAuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      summary: Processes user authentication by validating credentials.
+      tags:
+      - auth
+  /auth/logout/:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/remote.RawUserAuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - auth
+  /resource-categories/:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ResourceCategory'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - resource
+  /resource-categories/{category}:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ResourceCategory'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - resource
+  /resource-versions/{version}:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ResourceVersion'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - resource
+  /resources/:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Resource'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - resource
+  /resources/{resource}:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Resource'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - resource
+  /resources/{resource}/reviews:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ResourceReview'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - resource
+  /resources/{resource}/versions:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ResourceVersion'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - resource
+  /users/me/:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - users
+swagger: "2.0"

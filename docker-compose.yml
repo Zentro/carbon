@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  carbon:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    networks:
+      - carbon0
+    volumes:
+      - "/etc/carbon:/etc/carbon"
+      - "/var/log/carbon:/var/log/carbon"
+      - "/var/lib/carbon:/var/lib/carbon"
+    restart: always
+    ports: 
+      - "8080:8080"
+    tty: true
+
+networks:
+  carbon0:
+    name: carbon0
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "172.21.0.0/16"
+    driver_opts:
+      com.docker.network.bridge.name: carbon0

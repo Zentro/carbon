@@ -1,0 +1,25 @@
+debug: true
+key: ""
+secret: ""
+log_directory: "/etc/carbon"
+root_directory: "/usr/bin/carbon"
+api:
+  host: 0.0.0.0
+  port: 8080
+  ssl:
+    enabled: false
+  read_timeout: 15
+  write_timeout: 15
+  idle_timeout: 60
+db:
+  host: 0.0.0.0
+  port: 3306
+  database: 'carbon'
+  username: 'carbon'
+  password: 'carbon'
+
+  charset: 'utf8'
+  collation: 'utf8_unicode_ci'
+remote:
+  location: ""
+  key: ""
