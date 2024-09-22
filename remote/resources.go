@@ -56,6 +56,27 @@ func (c *client) GetResources(ctx context.Context) ([]domain.Resource, error) {
 	return resources, nil
 }
 
+func (c *client) GetResource(ctx context.Context, rid string) (domain.Resource, error) {
+	var r struct {
+		Data domain.Resource `json:"resource"`
+	}
+
+	res, err := c.Get(ctx, fmt.Sprintf("/resources/%s", rid), nil, nil)
+	if err != nil {
+		return domain.Resource{}, err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.WithField("error", err).Error("")
+		}
+	}(res.Body)
+	if err := res.BindJSON(&r); err != nil {
+		return domain.Resource{}, err
+	}
+	return r.Data, nil
+}
+
 func (c *client) GetResourceCategories(ctx context.Context) ([]domain.ResourceCategory, TreeMap, error) {
 	var r struct {
 		Data []domain.ResourceCategory `json:"categories"`

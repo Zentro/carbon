@@ -35,6 +35,7 @@ import (
 
 type Client interface {
 	GetResources(ctx context.Context) ([]domain.Resource, error)
+	GetResource(ctx context.Context, rid string) (domain.Resource, error)
 	GetResourceCategories(ctx context.Context) ([]domain.ResourceCategory, TreeMap, error)
 	GetResourceCategory(ctx context.Context) (domain.ResourceCategory, error)
 	GetResourceReviews(ctx context.Context, rid string) ([]domain.ResourceReview, error)

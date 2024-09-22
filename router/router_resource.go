@@ -32,8 +32,18 @@ func getAllResources(c *gin.Context) {
 // @Failure      500  {object}  RequestError
 // @Router       /resources/{resource} [get]
 func getResource(c *gin.Context) {
+	client := ExtractApiClient(c)
+	cache := ExtractResource(c)
+
+	resource, err := client.GetResource(c, cache.ID())
+	if err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+
+	// We can't extract from cache yet, we don't cache individual resources yet.
 	c.JSON(http.StatusOK, gin.H{
-		"resource": ExtractResource(c),
+		"resource": resource,
 	})
 }
 

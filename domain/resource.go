@@ -18,31 +18,32 @@ package domain
 import "strconv"
 
 type Resource struct {
-	ResourceId         int         `json:"resource_id"`
-	ResourceCategoryId uint        `json:"resource_category_id"`
-	ResourceState      string      `json:"resource_state"`
-	ResourceType       string      `json:"resource_type"`
-	Title              string      `json:"title"`
-	TagLine            string      `json:"tag_line"`
-	UpdateCount        int         `json:"update_count"`
-	ExternalUrl        string      `json:"external_url,omitempty"`
-	ViewUrl            string      `json:"view_url"`
-	IconUrl            string      `json:"icon_url"`
-	CurrentDownloadUrl string      `json:"current_download_url,omitempty"`
-	ViewCount          uint        `json:"view_count"`
-	ReviewCount        int         `json:"review_count"`
-	DownloadCount      uint        `json:"download_count"`
-	RatingCount        uint        `json:"rating_count"`
-	RatingAvg          float64     `json:"rating_avg"`
-	RatingWeighted     float64     `json:"rating_weighted"`
-	LastUpdate         uint        `json:"last_update"`
-	ResourceDate       uint        `json:"resource_date"`
-	Version            string      `json:"version"`
-	License            string      `json:"license,omitempty"`
-	LicenseUrl         string      `json:"license_url,omitempty"`
-	Description        string      `json:"description,omitempty"`
-	CustomFields       interface{} `json:"custom_fields,omitempty"`
-	CanDownload        bool        `json:"can_download"`
+	ResourceId         int    `json:"resource_id"`
+	ResourceCategoryId uint   `json:"resource_category_id"`
+	ResourceState      string `json:"resource_state"`
+	ResourceType       string `json:"resource_type"`
+	Title              string `json:"title"`
+	TagLine            string `json:"tag_line"`
+	UpdateCount        int    `json:"update_count"`
+	ExternalUrl        string `json:"external_url,omitempty"`
+	ViewUrl            string `json:"view_url"`
+	IconUrl            string `json:"icon_url"`
+	// CurrentDownloadUrl string      `json:"current_download_url,omitempty"`
+	ViewCount      uint           `json:"view_count"`
+	ReviewCount    int            `json:"review_count"`
+	DownloadCount  uint           `json:"download_count"`
+	RatingCount    uint           `json:"rating_count"`
+	RatingAvg      float64        `json:"rating_avg"`
+	RatingWeighted float64        `json:"rating_weighted"`
+	LastUpdate     uint           `json:"last_update"`
+	ResourceDate   uint           `json:"resource_date"`
+	Version        string         `json:"version"`
+	License        string         `json:"license,omitempty"`
+	LicenseUrl     string         `json:"license_url,omitempty"`
+	Description    string         `json:"description,omitempty"`
+	CustomFields   interface{}    `json:"custom_fields,omitempty"`
+	CanDownload    bool           `json:"can_download"`
+	CurrentFiles   []ResourceFile `json:"current_files"`
 }
 
 func (r *Resource) ID() string {
