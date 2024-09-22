@@ -75,6 +75,13 @@ func postAuthLogin(c *gin.Context) {
 		return
 	}
 
+	if authResponse.TfaRequired {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"tfa_providers": authResponse.TfaProviders,
+		})
+		return
+	}
+
 	user := authResponse.User
 
 	manager := ExtractTokenManager(c)
