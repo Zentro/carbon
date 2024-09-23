@@ -47,6 +47,9 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 
 	router := gin.New()
 
+	// If running behind an NGINX proxy.
+	router.SetTrustedProxies([]string{"127.0.0.1", "192.168.1.2", "10.0.0.0/8"})
+
 	router.Use(gin.Recovery())
 	router.Use(AttachApiClient(remote))
 	router.Use(AttachResourceManager(managers.ResourceManager),
