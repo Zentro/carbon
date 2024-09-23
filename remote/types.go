@@ -34,6 +34,7 @@ type Pagination struct {
 type RawUserAuthResponse struct {
 	TfaRequired  bool        `json:"tfa_required,omitempty"`
 	TfaProviders string      `json:"tfa_providers,omitempty"`
+	TfaTriggered bool        `json:"tfa_triggered,omitempty"`
 	User         domain.User `json:"user,omitempty"`
 	LoginToken   string      `json:"login_token,omitempty"`
 	RefreshToken string      `json:"refresh_token,omitempty"`

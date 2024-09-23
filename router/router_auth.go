@@ -82,6 +82,13 @@ func postAuthLogin(c *gin.Context) {
 		return
 	}
 
+	if authResponse.TfaTriggered {
+		c.AbortWithStatusJSON(http.StatusAccepted, gin.H{
+			"tfa_triggered": authResponse.TfaTriggered,
+		})
+		return
+	}
+
 	user := authResponse.User
 
 	manager := ExtractTokenManager(c)
