@@ -23,6 +23,7 @@ import (
 	"carbon/internal/user"
 	"carbon/remote"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -134,14 +135,16 @@ func ResourceExists() gin.HandlerFunc {
 	}
 }
 
+// ServerExists will ensure that the request server exists in the database.
+// Returns a 404 if we cannot locate it. If the resource is found it is set into
+// the request context.
 func ServerExists() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var r *domain.Server
 		if c.Param("server") != "" {
-			//manager := ExtractServerManager(c)
-			//r = manager.Find(func(r *domain.Server) bool {
-			//	return c.Param("server") == r.ID()
-			//})
+			manager := ExtractServerManager(c)
+			serverId, _ := strconv.Atoi(c.Param("server"))
+			r, _ := manager.FindByID(serverId)
 		}
 		if r == nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "The requested resource could not be found."})
@@ -172,6 +175,8 @@ func ExtractServer(c *gin.Context) *domain.Server {
 	return v.(*domain.Server)
 }
 
+// ExtractUser will return the user from the gin.Context or panic if it is
+// not present.
 func ExtractUser(c *gin.Context) domain.User {
 	v, ok := c.Get("user")
 	if !ok {
@@ -180,12 +185,18 @@ func ExtractUser(c *gin.Context) domain.User {
 	return v.(domain.User)
 }
 
+// ExtractToken will return the token from the gin.Context or panic if it
+// is not present.
 func ExtractToken(c *gin.Context) domain.Token {
 	v, ok := c.Get("token")
 	if !ok {
 		panic("router/middleware: cannot extract token: not present in request context")
 	}
 	return v.(domain.Token)
+}
+
+func RequireApiAuthorization() gin.HandlerFunc {
+	return func(c *gin.Context) {}
 }
 
 // RequireAuthorization will only check if the proper authentication heads

@@ -34,7 +34,7 @@ func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 }
 
 func (m *Manager) init() error {
-	log.Info("initializing server schema...")
+	log.Info("initializing server schema into the database...")
 
 	if err := m.db.AutoMigrate(&domain.Server{}); err != nil {
 		return err
@@ -43,14 +43,25 @@ func (m *Manager) init() error {
 	return nil
 }
 
-func (m *Manager) Find(s *domain.Server) {
-
+func (m *Manager) FindByID(id int) (*domain.Server, error) {
+	var server domain.Server
+	if err := m.db.First(&server, id).Error; err != nil {
+		return nil, err
+	}
+	return &server, nil
 }
 
-func (m *Manager) Create(s *domain.Server) {
-
-}
-
-func (m *Manager) Collection() []*domain.Server {
+func (m *Manager) Create(s *domain.Server) error {
+	if err := m.db.Create(&s).Error; err != nil {
+		return err
+	}
 	return nil
+}
+
+func (m *Manager) Collection() ([]*domain.Server, error) {
+	var servers []*domain.Server
+	if err := m.db.Find(&servers).Error; err != nil {
+		return nil, err
+	}
+	return servers, nil
 }

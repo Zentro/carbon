@@ -16,21 +16,37 @@
 package router
 
 import (
+	"carbon/domain"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func getAllServers(c *gin.Context) {
-	c.Status(http.StatusNotImplemented)
+	c.JSON(http.StatusOK, gin.H{
+		"servers": ExtractServerManager(c).Collection(),
+	})
 }
 
 func getServer(c *gin.Context) {
-	c.Status(http.StatusNotImplemented)
+	c.JSON(http.StatusOK, gin.H{
+		"server": ExtractServer(c),
+	})
 }
 
 func postCreateServer(c *gin.Context) {
-	c.Status(http.StatusNotImplemented)
+	var newServerRequest domain.Server
+	if err := c.BindJSON(&newServerRequest); err != nil {
+		return
+	}
+
+	manager := ExtractServerManager(c)
+	if err := manager.Create(&newServerRequest); err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 func putUpdateServer(c *gin.Context) {
@@ -42,5 +58,17 @@ func postServerPower(c *gin.Context) {
 }
 
 func postSyncServer(c *gin.Context) {
+	c.Status(http.StatusNotImplemented)
+}
+
+func postCreateServerPlayer(c *gin.Context) {
+	c.Status(http.StatusNotImplemented)
+}
+
+func getAllServerPlayers(c *gin.Context) {
+	c.Status(http.StatusNotImplemented)
+}
+
+func getServerPlayer(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }

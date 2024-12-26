@@ -100,6 +100,10 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 		server.PUT("", putUpdateServer)
 		server.POST("/sync", postSyncServer)
 		server.POST("/power", postServerPower)
+
+		server.GET("/players", getAllServerPlayers)
+		server.GET("/players/:player", getServerPlayer)
+		server.POST("/players", postCreateServerPlayer)
 	}
 
 	router.GET("/resources", getAllResources)

@@ -83,14 +83,14 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 	printLogo()
 	log.Debug("running in debug mode")
 
-	remote := remote.NewClient(config.Get().Remote.Location, config.Get().Remote.Key)
+	remoteClient := remote.NewClient(config.Get().Remote.Location, config.Get().Remote.Key)
 
 	database, err := mysql.Initialize()
 	if err != nil {
 		log.WithField("error", err).Fatal("could not initialize database connection")
 	}
 
-	rm, err := resource.NewManager(cmd.Context(), remote)
+	rm, err := resource.NewManager(cmd.Context(), remoteClient)
 	if err != nil {
 		log.WithField("error", err).Fatal("could not initialize resource manager")
 	}
@@ -99,7 +99,7 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 		log.WithField("error", err).Fatal("could not initialize server manager")
 	}
 
-	um, err := user.NewManager(cmd.Context(), remote)
+	um, err := user.NewManager(cmd.Context(), remoteClient)
 	if err != nil {
 		log.WithField("error", err).Fatal("could not initialize the user manager")
 	}
@@ -116,7 +116,7 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 		TokenManager:    tm,
 	}
 
-	r := router.NewClient(remote, managers)
+	r := router.NewClient(remoteClient, managers)
 
 	asyncCacheRefreshSignal := make(chan struct{})
 	asyncTokenPurgeSignal := make(chan struct{})
@@ -248,7 +248,7 @@ func exitWithConfigurationError() {
 func printLogo() {
 	fmt.Printf(`Rigs of Rods Web API [Version %s]`, system.Version)
 	fmt.Println()
-	fmt.Println(`Copyright 2022-2023 Rafael Galvan. All rights reserved.`)
+	fmt.Println(`Copyright 2022-2025 Rafael Galvan. All rights reserved.`)
 	fmt.Println()
 	fmt.Println(`Use of this source code is governed by the GPLv3 license.`)
 	fmt.Println(`The license can be found in the LICENSE file.`)
