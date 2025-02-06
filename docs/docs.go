@@ -22,9 +22,137 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api_keys/": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "api_key"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.ApiKey"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "api_key"
+                ],
+                "parameters": [
+                    {
+                        "description": "API Key Object",
+                        "name": "apiKey",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ApiKey"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ApiKey"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api_keys/{key}": {
+            "delete": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "api_key"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key Identifier",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login/": {
             "post": {
-                "description": "Validates provided username and password to authenticate the user. No session management is handled.",
                 "consumes": [
                     "application/json"
                 ],
@@ -34,7 +162,6 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Processes user authentication by validating credentials.",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -64,6 +191,45 @@ const docTemplate = `{
             }
         },
         "/auth/logout/": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/remote.RawUserAuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh/": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -387,6 +553,161 @@ const docTemplate = `{
                 }
             }
         },
+        "/servers": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "server"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Server"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "server"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Server"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "server"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Server"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            }
+        },
+        "/servers/{server}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "server"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Server"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            }
+        },
         "/users/me/": {
             "get": {
                 "consumes": [
@@ -425,17 +746,83 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/{user}/": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.User"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "domain.ApiKey": {
+            "type": "object",
+            "properties": {
+                "api_key_id": {
+                    "description": "ID is the primary key of the API key",
+                    "type": "integer"
+                },
+                "api_key_user_id": {
+                    "description": "USerID references the user who the API key belongs to",
+                    "type": "integer"
+                },
+                "key": {
+                    "description": "Key is the actual API key string",
+                    "type": "string"
+                },
+                "role": {
+                    "description": "Role specifies the role associated with the API key",
+                    "type": "string"
+                }
+            }
+        },
         "domain.Resource": {
             "type": "object",
             "properties": {
                 "can_download": {
                     "type": "boolean"
                 },
-                "current_download_url": {
-                    "type": "string"
+                "current_files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.ResourceFile"
+                    }
                 },
                 "custom_fields": {},
                 "description": {
@@ -499,6 +886,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "view_count": {
+                    "description": "CurrentDownloadUrl string      ` + "`" + `json:\"current_download_url,omitempty\"` + "`" + `",
                     "type": "integer"
                 },
                 "view_url": {
@@ -598,6 +986,75 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.Server": {
+            "type": "object",
+            "required": [
+                "description",
+                "has_password",
+                "ip",
+                "is_visible",
+                "max_clients",
+                "name",
+                "port",
+                "version"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "has_password": {
+                    "type": "boolean"
+                },
+                "icon_url": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "is_visible": {
+                    "type": "boolean"
+                },
+                "max_clients": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner_id": {
+                    "type": "integer"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "server_date": {
+                    "type": "integer"
+                },
+                "server_id": {
+                    "type": "integer"
+                },
+                "server_state": {
+                    "$ref": "#/definitions/domain.ServerStatus"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ServerStatus": {
+            "type": "integer",
+            "enum": [
+                1,
+                2,
+                3,
+                4
+            ],
+            "x-enum-varnames": [
+                "StatusOnline",
+                "StatusOffline",
+                "StatusHidden",
+                "StatusCrashed"
+            ]
+        },
         "domain.User": {
             "type": "object",
             "properties": {
@@ -632,10 +1089,16 @@ const docTemplate = `{
                 "login_token": {
                     "type": "string"
                 },
+                "refresh_token": {
+                    "type": "string"
+                },
                 "tfa_providers": {
                     "type": "string"
                 },
                 "tfa_required": {
+                    "type": "boolean"
+                },
+                "tfa_triggered": {
                     "type": "boolean"
                 },
                 "user": {

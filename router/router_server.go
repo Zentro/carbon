@@ -32,14 +32,14 @@ type CustomClaims struct {
 }
 
 // getAllServers godoc
-// @Tags         server
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  []domain.Server
-// @Failure      400  {object}  RequestError
-// @Failure      404  {object}  RequestError
-// @Failure      500  {object}  RequestError
-// @Router       /servers [get]
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	[]domain.Server
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/servers [get]
 func getAllServers(c *gin.Context) {
 	servers, err := ExtractServerManager(c).Collection()
 	if err != nil {
@@ -53,14 +53,14 @@ func getAllServers(c *gin.Context) {
 }
 
 // getServer godoc
-// @Tags         server
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  domain.Server
-// @Failure      400  {object}  RequestError
-// @Failure      404  {object}  RequestError
-// @Failure      500  {object}  RequestError
-// @Router       /servers/{server} [get]
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	domain.Server
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/servers/{server} [get]
 func getServer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"server": ExtractServer(c),
@@ -68,14 +68,14 @@ func getServer(c *gin.Context) {
 }
 
 // postCreateServer godoc
-// @Tags         server
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  domain.Server
-// @Failure      400  {object}  RequestError
-// @Failure      404  {object}  RequestError
-// @Failure      500  {object}  RequestError
-// @Router       /servers [post]
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	domain.Server
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/servers [post]
 func postCreateServer(c *gin.Context) {
 	var newServerRequest domain.Server
 	if err := c.BindJSON(&newServerRequest); err != nil {
@@ -92,14 +92,14 @@ func postCreateServer(c *gin.Context) {
 }
 
 // putUpdateServer godoc
-// @Tags         server
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  domain.Server
-// @Failure      400  {object}  RequestError
-// @Failure      404  {object}  RequestError
-// @Failure      500  {object}  RequestError
-// @Router       /servers [put]
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	domain.Server
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/servers [put]
 func putUpdateServer(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }

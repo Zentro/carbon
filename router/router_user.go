@@ -22,27 +22,27 @@ import (
 )
 
 // ShowAccount godoc
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  []domain.User
-// @Failure      400  {object}  RequestError
-// @Failure      404  {object}  RequestError
-// @Failure      500  {object}  RequestError
-// @Router       /users/{user}/ [get]
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	[]domain.User
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/users/{user}/ [get]
 func getUser(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }
 
 // ShowAccount godoc
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  domain.User
-// @Failure      400  {object}  RequestError
-// @Failure      404  {object}  RequestError
-// @Failure      500  {object}  RequestError
-// @Router       /users/me/ [get]
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	domain.User
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/users/me/ [get]
 func getMe(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"me": ExtractUser(c),

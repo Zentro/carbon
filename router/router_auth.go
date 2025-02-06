@@ -52,14 +52,14 @@ type UserAuthRefreshRequest struct {
 }
 
 // ShowAccount godoc
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  remote.RawUserAuthResponse
-// @Failure      400  {object}  RequestError
-// @Failure      404  {object}  RequestError
-// @Failure      500  {object}  RequestError
-// @Router       /auth/login/ [post]
+//	@Tags		auth
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	remote.RawUserAuthResponse
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/auth/login/ [post]
 func postAuthLogin(c *gin.Context) {
 	var authRequest UserAuthRequest
 	var authResponse remote.RawUserAuthResponse
@@ -108,14 +108,14 @@ func postAuthLogin(c *gin.Context) {
 }
 
 // ShowAccount godoc
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  remote.RawUserAuthResponse
-// @Failure      400  {object}  RequestError
-// @Failure      404  {object}  RequestError
-// @Failure      500  {object}  RequestError
-// @Router       /auth/logout/ [post]
+//	@Tags		auth
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	remote.RawUserAuthResponse
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/auth/logout/ [post]
 func postAuthLogout(c *gin.Context) {
 	if err := ExtractTokenManager(c).Invalidate(ExtractToken(c).ID); err != nil {
 		NewError(err).Abort(c)
@@ -125,14 +125,14 @@ func postAuthLogout(c *gin.Context) {
 }
 
 // ShowAccount godoc
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  remote.RawUserAuthResponse
-// @Failure      400  {object}  RequestError
-// @Failure      404  {object}  RequestError
-// @Failure      500  {object}  RequestError
-// @Router       /auth/refresh/ [post]
+//	@Tags		auth
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	remote.RawUserAuthResponse
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/auth/refresh/ [post]
 func postAuthRefresh(c *gin.Context) {
 	var authRefreshRequest UserAuthRefreshRequest
 	if err := c.BindJSON(&authRefreshRequest); err != nil {

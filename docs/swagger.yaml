@@ -1,11 +1,28 @@
 basePath: /
 definitions:
+  domain.ApiKey:
+    properties:
+      api_key_id:
+        description: ID is the primary key of the API key
+        type: integer
+      api_key_user_id:
+        description: USerID references the user who the API key belongs to
+        type: integer
+      key:
+        description: Key is the actual API key string
+        type: string
+      role:
+        description: Role specifies the role associated with the API key
+        type: string
+    type: object
   domain.Resource:
     properties:
       can_download:
         type: boolean
-      current_download_url:
-        type: string
+      current_files:
+        items:
+          $ref: '#/definitions/domain.ResourceFile'
+        type: array
       custom_fields: {}
       description:
         type: string
@@ -48,6 +65,7 @@ definitions:
       version:
         type: string
       view_count:
+        description: CurrentDownloadUrl string      `json:"current_download_url,omitempty"`
         type: integer
       view_url:
         type: string
@@ -112,6 +130,56 @@ definitions:
       version_string:
         type: string
     type: object
+  domain.Server:
+    properties:
+      description:
+        type: string
+      has_password:
+        type: boolean
+      icon_url:
+        type: string
+      ip:
+        type: string
+      is_visible:
+        type: boolean
+      max_clients:
+        type: integer
+      name:
+        type: string
+      owner_id:
+        type: integer
+      port:
+        type: integer
+      server_date:
+        type: integer
+      server_id:
+        type: integer
+      server_state:
+        $ref: '#/definitions/domain.ServerStatus'
+      version:
+        type: string
+    required:
+    - description
+    - has_password
+    - ip
+    - is_visible
+    - max_clients
+    - name
+    - port
+    - version
+    type: object
+  domain.ServerStatus:
+    enum:
+    - 1
+    - 2
+    - 3
+    - 4
+    type: integer
+    x-enum-varnames:
+    - StatusOnline
+    - StatusOffline
+    - StatusHidden
+    - StatusCrashed
   domain.User:
     properties:
       avatar_urls: {}
@@ -135,9 +203,13 @@ definitions:
     properties:
       login_token:
         type: string
+      refresh_token:
+        type: string
       tfa_providers:
         type: string
       tfa_required:
+        type: boolean
+      tfa_triggered:
         type: boolean
       user:
         $ref: '#/definitions/domain.User'
@@ -158,12 +230,93 @@ info:
   title: Rigs of Rods API
   version: "2.0"
 paths:
+  /api_keys/:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ApiKey'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - api_key
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: API Key Object
+        in: body
+        name: apiKey
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ApiKey'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.ApiKey'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - api_key
+  /api_keys/{key}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: API Key Identifier
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - api_key
   /auth/login/:
     post:
       consumes:
       - application/json
-      description: Validates provided username and password to authenticate the user.
-        No session management is handled.
       produces:
       - application/json
       responses:
@@ -183,10 +336,34 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/router.RequestError'
-      summary: Processes user authentication by validating credentials.
       tags:
       - auth
   /auth/logout/:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/remote.RawUserAuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - auth
+  /auth/refresh/:
     post:
       consumes:
       - application/json
@@ -394,6 +571,133 @@ paths:
             $ref: '#/definitions/router.RequestError'
       tags:
       - resource
+  /servers:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Server'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - server
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Server'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - server
+    put:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Server'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - server
+  /servers/{server}:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Server'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - server
+  /users/{user}/:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.User'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - users
   /users/me/:
     get:
       consumes:

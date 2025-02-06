@@ -50,20 +50,20 @@ import (
 // ├── system
 // │   └── const
 
-// @title           Rigs of Rods API
-// @version         2.0
+//	@title		Rigs of Rods API
+//	@version	2.0
 
-// @contact.name   Rafael Galvan
-// @contact.url    http://www.rigsofrods.org
+//	@contact.name	Rafael Galvan
+//	@contact.url	http://www.rigsofrods.org
 
-// @license.name  GNU GPL v3
-// @license.url   https://www.gnu.org/licenses/gpl-3.0.en.html
+//	@license.name	GNU GPL v3
+//	@license.url	https://www.gnu.org/licenses/gpl-3.0.en.html
 
-// @host      localhost:8080
-// @BasePath  /
+//	@host		localhost:8080
+//	@BasePath	/
 
-// @externalDocs.description  OpenAPI
-// @externalDocs.url          https://swagger.io/resources/open-api/
+//	@externalDocs.description	OpenAPI
+//	@externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 	cmd.Execute()
 }
