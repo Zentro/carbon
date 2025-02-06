@@ -15,20 +15,91 @@
 
 package router
 
-import "github.com/gin-gonic/gin"
+import (
+	"carbon/domain"
+	"net/http"
 
+	"github.com/gin-gonic/gin"
+)
+
+// getAllApiKeys godoc
+// @Tags         api_key
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  []domain.ApiKey
+// @Failure      400  {object}  RequestError
+// @Failure      404  {object}  RequestError
+// @Failure      500  {object}  RequestError
+// @Router       /api_keys/ [get]
 func getAllApiKeys(c *gin.Context) {
+	api_keys, err := ExtractApiKeyManager(c).Collection()
+	if err != nil {
+		NewError(err).Abort(c)
+		return
+	}
 
+	c.JSON(http.StatusOK, gin.H{
+		"api_keys": api_keys,
+	})
 }
 
+// getApiKey godoc
+// @Tags         api_key
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  []domain.ApiKey
+// @Failure      400  {object}  RequestError
+// @Failure      404  {object}  RequestError
+// @Failure      500  {object}  RequestError
+// @Router       /api_keys/ [get]
 func getApiKey(c *gin.Context) {
-
+	c.JSON(http.StatusOK, gin.H{
+		"api_key": ExtractApiKeyKey(c),
+	})
 }
 
+// postCreateApiKey godoc
+// @Tags         api_key
+// @Accept       json
+// @Produce      json
+// @Param        apiKey  body  domain.ApiKey  true  "API Key Object"
+// @Success      201  {object}  domain.ApiKey
+// @Failure      400  {object}  RequestError
+// @Failure      500  {object}  RequestError
+// @Router       /api_keys/ [post]
 func postCreateApiKey(c *gin.Context) {
+	var newApiKeyRequest domain.ApiKey
+	if err := c.BindJSON(&newApiKeyRequest); err != nil {
+		return
+	}
 
+	manager := ExtractApiKeyManager(c)
+	if err := manager.Create(&newApiKeyRequest); err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"api_key": newApiKeyRequest,
+	})
 }
 
+// deleteApiKey godoc
+// @Tags         api_key
+// @Accept       json
+// @Produce      json
+// @Param        key  path  string  true  "API Key Identifier"
+// @Success      204  "No Content"
+// @Failure      400  {object}  RequestError
+// @Failure      404  {object}  RequestError
+// @Failure      500  {object}  RequestError
+// @Router       /api_keys/{key} [delete]
 func deleteApiKey(c *gin.Context) {
+	api_key_key := ExtractApiKeyKey(c)
+	manager := ExtractApiKeyManager(c)
+	if err := manager.Delete(api_key_key.Key); err != nil {
+		return
+	}
 
+	c.Status(http.StatusNoContent)
 }

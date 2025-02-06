@@ -18,7 +18,6 @@ package router
 import (
 	"carbon/config"
 	"carbon/domain"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -32,7 +31,7 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-// ShowAccount godoc
+// getAllServers godoc
 // @Tags         server
 // @Accept       json
 // @Produce      json
@@ -53,7 +52,7 @@ func getAllServers(c *gin.Context) {
 	})
 }
 
-// ShowAccount godoc
+// getServer godoc
 // @Tags         server
 // @Accept       json
 // @Produce      json
@@ -68,7 +67,7 @@ func getServer(c *gin.Context) {
 	})
 }
 
-// ShowAccount godoc
+// postCreateServer godoc
 // @Tags         server
 // @Accept       json
 // @Produce      json
@@ -85,7 +84,6 @@ func postCreateServer(c *gin.Context) {
 
 	manager := ExtractServerManager(c)
 	if err := manager.Create(&newServerRequest); err != nil {
-		fmt.Println(err.Error())
 		NewError(err).Abort(c)
 		return
 	}
@@ -93,7 +91,7 @@ func postCreateServer(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// ShowAccount godoc
+// putUpdateServer godoc
 // @Tags         server
 // @Accept       json
 // @Produce      json

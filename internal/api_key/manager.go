@@ -28,23 +28,16 @@ func (m *Manager) init() error {
 	return nil
 }
 
-func (m *Manager) FindByKey(key string) (domain.ApiKey, error) {
+func (m *Manager) FindByKey(key string) (*domain.ApiKey, error) {
 	var apiKey domain.ApiKey
-	if err := m.db.First(&apiKey, "key = ?", key).Error; err != nil {
-		return domain.ApiKey{}, err
+	if err := m.db.First(&apiKey, "`key` = ?", key).Error; err != nil {
+		return nil, err
 	}
-	return apiKey, nil
+	return &apiKey, nil
 }
 
-func (m *Manager) Create(apiKey domain.ApiKey) error {
+func (m *Manager) Create(apiKey *domain.ApiKey) error {
 	if err := m.db.Create(&apiKey).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *Manager) Delete(apiKey domain.ApiKey) error {
-	if err := m.db.Delete(&apiKey).Error; err != nil {
 		return err
 	}
 	return nil
@@ -56,4 +49,11 @@ func (m *Manager) Collection() ([]*domain.ApiKey, error) {
 		return nil, err
 	}
 	return apiKeys, nil
+}
+
+func (m *Manager) Delete(key string) error {
+	if err := m.db.Delete(&domain.ApiKey{}, "`key` = ?", key).Error; err != nil {
+		return err
+	}
+	return nil
 }

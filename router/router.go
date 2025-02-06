@@ -18,6 +18,7 @@ package router
 import (
 	"carbon/config"
 	"carbon/domain"
+	"carbon/internal/api_key"
 	"carbon/internal/resource"
 	"carbon/internal/server"
 	"carbon/internal/token"
@@ -40,6 +41,7 @@ type ManagerGroup struct {
 	ServerManager   *server.Manager
 	UserManager     *user.Manager
 	TokenManager    *token.Manager
+	ApiKeyManager   *api_key.Manager
 }
 
 type Role = domain.ApiKeyRole
@@ -58,7 +60,8 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	router.Use(AttachResourceManager(managers.ResourceManager),
 		AttachUserManager(managers.UserManager),
 		AttachServerManager(managers.ServerManager),
-		AttachTokenManager(managers.TokenManager))
+		AttachTokenManager(managers.TokenManager),
+		AttachApiKeyManager(managers.ApiKeyManager))
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(gin.LoggerWithFormatter(func(params gin.LogFormatterParams) string {
 		log.WithFields(log.Fields{
@@ -113,12 +116,12 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	}
 
 	api_key := router.Group("/api-keys")
-	router.Use(RequireAuthorization(), RoleRequired(Role("operator")))
+	api_key.Use(RequireApiAuthorization(), RoleRequired(Role("operator")))
 	{
 		api_key.POST("", postCreateApiKey)
-		api_key.GET("/:api_key", getApiKey)
+		api_key.GET("/:api_key", getApiKey, ApiKeyKeyExists())
 		api_key.GET("", getAllApiKeys)
-		api_key.DELETE("", deleteApiKey)
+		api_key.DELETE("", deleteApiKey, ApiKeyKeyExists())
 	}
 
 	router.GET("/resources", getAllResources)

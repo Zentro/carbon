@@ -65,3 +65,10 @@ func (m *Manager) Collection() ([]*domain.Server, error) {
 	}
 	return servers, nil
 }
+
+func (m *Manager) Delete(id int) error {
+	if err := m.db.Delete(&domain.Server{}, id).Error; err != nil {
+		return err
+	}
+	return nil
+}

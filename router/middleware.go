@@ -23,6 +23,7 @@ import (
 	"carbon/internal/token"
 	"carbon/internal/user"
 	"carbon/remote"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -172,6 +173,22 @@ func ServerExists() gin.HandlerFunc {
 	}
 }
 
+func ApiKeyKeyExists() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Param("api_key") != "" {
+			var k *domain.ApiKey
+			manager := ExtractApiKeyManager(c)
+			api_key := c.Param("api_key")
+			k, err := manager.FindByKey(api_key)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "The requested resource could not be found."})
+				return
+			}
+			c.Set("apiKeyKey", k)
+		}
+	}
+}
+
 // ExtractResource will return the resource from the gin.Context or panic if
 // it is not present.
 func ExtractResource(c *gin.Context) *domain.Resource {
@@ -190,6 +207,14 @@ func ExtractServer(c *gin.Context) *domain.Server {
 		panic("router/middleware: cannot extract server: not present in request context")
 	}
 	return v.(*domain.Server)
+}
+
+func ExtractApiKeyKey(c *gin.Context) *domain.ApiKey {
+	v, ok := c.Get("apiKeyKey")
+	if !ok {
+		panic("router/middleware: cannot extract api key: not present in request context")
+	}
+	return v.(*domain.ApiKey)
 }
 
 // ExtractUser will return the user from the gin.Context or panic if it is
@@ -227,7 +252,7 @@ func RequireApiAuthorization() gin.HandlerFunc {
 			return
 		}
 
-		var r domain.ApiKey
+		var r *domain.ApiKey
 		manager := ExtractApiKeyManager(c)
 		r, dbErr := manager.FindByKey(key[1])
 		if dbErr != nil {
@@ -247,8 +272,8 @@ func RequireApiAuthorization() gin.HandlerFunc {
 // RoleRequired will check if the required role matches the role present in the context.
 func RoleRequired(required Role) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		roleAny, exists := c.Get("apiRole")
-		if exists {
+		roleAny, ok := c.Get("apiRole")
+		if !ok {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error": "The required authorization heads were not present in the request.",
 			})
@@ -256,15 +281,10 @@ func RoleRequired(required Role) gin.HandlerFunc {
 			return
 		}
 
-		roleStr, ok := roleAny.(string)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "The role type in the authorization heads are not of the expected type.",
-			})
+		// Assert the type from any to string.
+		roleStr := fmt.Sprintf("%v", roleAny)
 
-			return
-		}
-
+		// Change to type ApiKeyRole
 		role := Role(roleStr)
 
 		if !role.IsValid() {
