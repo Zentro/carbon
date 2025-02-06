@@ -32,6 +32,7 @@ type CustomClaims struct {
 }
 
 // getAllServers godoc
+//
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
@@ -53,6 +54,7 @@ func getAllServers(c *gin.Context) {
 }
 
 // getServer godoc
+//
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
@@ -68,6 +70,7 @@ func getServer(c *gin.Context) {
 }
 
 // postCreateServer godoc
+//
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
@@ -92,19 +95,41 @@ func postCreateServer(c *gin.Context) {
 }
 
 // putUpdateServer godoc
+//
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	domain.Server
+//	@Success	204	"No Content"
 //	@Failure	400	{object}	RequestError
 //	@Failure	404	{object}	RequestError
 //	@Failure	500	{object}	RequestError
-//	@Router		/servers [put]
+//	@Router		/servers/{server} [put]
 func putUpdateServer(c *gin.Context) {
-	c.Status(http.StatusNotImplemented)
+	var updateServerRequest domain.Server
+	if err := c.BindJSON(&updateServerRequest); err != nil {
+		return
+	}
+
+	manager := ExtractServerManager(c)
+	if err := manager.Update(&updateServerRequest); err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
-func postServerPower(c *gin.Context) {
+// patchServerPower godoc
+//
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	204	"No Content"
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/servers/{server}/power [patch]
+func patchServerPower(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }
 
@@ -112,18 +137,58 @@ func postSyncServer(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }
 
+// postCreateServerClient godoc
+//
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	204	"No Content"
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/servers/{server}/clients [post]
 func postCreateServerClient(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }
 
+// getAllServerClients godoc
+//
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	204	"No Content"
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/servers/{server}/clients [get]
 func getAllServerClients(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }
 
+// getServerClient godoc
+//
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	204	"No Content"
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/servers/{server}/clients/{client} [get]
 func getServerClient(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }
 
+// postClientJoinRequest godoc
+//
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	string
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/servers/{server}/client/join [post]
 func postClientJoinRequest(c *gin.Context) {
 	user := ExtractUser(c)
 	server := ExtractServer(c)
@@ -147,6 +212,16 @@ func postClientJoinRequest(c *gin.Context) {
 	c.String(http.StatusOK, signedToken)
 }
 
+// getClientJoinRequest godoc
+//
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	204	"No Content"
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/servers/{server}/client/join [get]
 func getClientJoinRequest(c *gin.Context) {
 	var req struct {
 		Token string `json:"token"`
@@ -180,5 +255,5 @@ func getClientJoinRequest(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusAccepted)
+	c.Status(http.StatusNoContent)
 }

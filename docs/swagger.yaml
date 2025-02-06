@@ -5,15 +5,18 @@ definitions:
       api_key_id:
         description: ID is the primary key of the API key
         type: integer
+      api_key_key:
+        description: Key is the actual API key string
+        type: string
+      api_key_role:
+        description: Role specifies the role associated with the API key
+        type: string
       api_key_user_id:
         description: USerID references the user who the API key belongs to
         type: integer
-      key:
-        description: Key is the actual API key string
-        type: string
-      role:
-        description: Role specifies the role associated with the API key
-        type: string
+    required:
+    - api_key_role
+    - api_key_user_id
     type: object
   domain.Resource:
     properties:
@@ -230,7 +233,7 @@ info:
   title: Rigs of Rods API
   version: "2.0"
 paths:
-  /api_keys/:
+  /api-keys/:
     get:
       consumes:
       - application/json
@@ -284,7 +287,7 @@ paths:
             $ref: '#/definitions/router.RequestError'
       tags:
       - api_key
-  /api_keys/{key}:
+  /api-keys/{key}:
     delete:
       consumes:
       - application/json
@@ -622,7 +625,8 @@ paths:
             $ref: '#/definitions/router.RequestError'
       tags:
       - server
-    put:
+  /servers/{server}:
+    get:
       consumes:
       - application/json
       produces:
@@ -646,8 +650,52 @@ paths:
             $ref: '#/definitions/router.RequestError'
       tags:
       - server
-  /servers/{server}:
+    put:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - server
+  /servers/{server}/client/join:
     get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - server
+    post:
       consumes:
       - application/json
       produces:
@@ -656,7 +704,98 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.Server'
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - server
+  /servers/{server}/clients:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - server
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - server
+  /servers/{server}/clients/{client}:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - server
+  /servers/{server}/power:
+    patch:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
         "400":
           description: Bad Request
           schema:

@@ -21,7 +21,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ShowAccount godoc
+// getUser godoc
+//
 //	@Tags		users
 //	@Accept		json
 //	@Produce	json
@@ -34,7 +35,8 @@ func getUser(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }
 
-// ShowAccount godoc
+// getMe godoc
+//
 //	@Tags		users
 //	@Accept		json
 //	@Produce	json

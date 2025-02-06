@@ -18,13 +18,13 @@ package domain
 // ApiKey represents a high level definition of an API key.
 type ApiKey struct {
 	// ID is the primary key of the API key
-	ApiKeyID uint `gorm:"primaryKey" json:"api_key_id"`
+	ApiKeyID uint `gorm:"primaryKey" json:"api_key_id,omitempty"`
 	// USerID references the user who the API key belongs to
-	UserID uint `gorm:"not null" json:"api_key_user_id"`
+	UserID uint `gorm:"not null" json:"api_key_user_id" binding:"required"`
 	// Key is the actual API key string
-	Key string `gorm:"not null" json:"key"`
+	Key string `gorm:"not null" json:"api_key_key,omitempty"`
 	// Role specifies the role associated with the API key
-	Role ApiKeyRole `gorm:"not null" json:"role"`
+	Role ApiKeyRole `gorm:"not null" json:"api_key_role,omitempty" binding:"required"`
 }
 
 const (

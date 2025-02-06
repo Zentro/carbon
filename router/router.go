@@ -99,15 +99,15 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	router.GET("/servers", getAllServers)
 	router.GET("/servers/:server", ServerExists(), getServer)
 	router.POST("/servers/:server/clients/join",
-		ServerExists(), RequireAuthorization(), postClientJoinRequest)
-	router.POST("/servers", postCreateServer)
+		RequireAuthorization(), ServerExists(), postClientJoinRequest)
 
 	server := router.Group("/servers/:server")
 	server.Use(ServerExists(), RoleRequired(Role("user")))
 	{
+		server.POST("", postCreateServer)
 		server.PUT("", putUpdateServer)
 		server.POST("/sync", postSyncServer)
-		server.POST("/power", postServerPower)
+		server.PATCH("/power", patchServerPower)
 
 		server.GET("/clients", getAllServerClients)
 		server.GET("/clients/:client", getServerClient)
@@ -121,7 +121,7 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 		api_key.POST("", postCreateApiKey)
 		api_key.GET("/:api_key", getApiKey, ApiKeyKeyExists())
 		api_key.GET("", getAllApiKeys)
-		api_key.DELETE("", deleteApiKey, ApiKeyKeyExists())
+		api_key.DELETE("/:api_key", deleteApiKey, ApiKeyKeyExists())
 	}
 
 	router.GET("/resources", getAllResources)

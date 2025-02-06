@@ -17,12 +17,14 @@ package router
 
 import (
 	"carbon/domain"
+	"carbon/internal/api_key"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 // getAllApiKeys godoc
+//
 //	@Tags		api_key
 //	@Accept		json
 //	@Produce	json
@@ -30,7 +32,7 @@ import (
 //	@Failure	400	{object}	RequestError
 //	@Failure	404	{object}	RequestError
 //	@Failure	500	{object}	RequestError
-//	@Router		/api_keys/ [get]
+//	@Router		/api-keys/ [get]
 func getAllApiKeys(c *gin.Context) {
 	api_keys, err := ExtractApiKeyManager(c).Collection()
 	if err != nil {
@@ -44,6 +46,7 @@ func getAllApiKeys(c *gin.Context) {
 }
 
 // getApiKey godoc
+//
 //	@Tags		api_key
 //	@Accept		json
 //	@Produce	json
@@ -51,7 +54,7 @@ func getAllApiKeys(c *gin.Context) {
 //	@Failure	400	{object}	RequestError
 //	@Failure	404	{object}	RequestError
 //	@Failure	500	{object}	RequestError
-//	@Router		/api_keys/ [get]
+//	@Router		/api-keys/ [get]
 func getApiKey(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"api_key": ExtractApiKeyKey(c),
@@ -59,6 +62,7 @@ func getApiKey(c *gin.Context) {
 }
 
 // postCreateApiKey godoc
+//
 //	@Tags		api_key
 //	@Accept		json
 //	@Produce	json
@@ -66,12 +70,22 @@ func getApiKey(c *gin.Context) {
 //	@Success	201		{object}	domain.ApiKey
 //	@Failure	400		{object}	RequestError
 //	@Failure	500		{object}	RequestError
-//	@Router		/api_keys/ [post]
+//	@Router		/api-keys/ [post]
 func postCreateApiKey(c *gin.Context) {
 	var newApiKeyRequest domain.ApiKey
 	if err := c.BindJSON(&newApiKeyRequest); err != nil {
 		return
 	}
+
+	randomKey, err := api_key.GenerateRandomKey()
+	if err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+
+	// This key should always be random and unique. The SQL unique constraint should
+	// prevent non-unique keys from being accepted.
+	newApiKeyRequest.Key = randomKey
 
 	manager := ExtractApiKeyManager(c)
 	if err := manager.Create(&newApiKeyRequest); err != nil {
@@ -85,6 +99,7 @@ func postCreateApiKey(c *gin.Context) {
 }
 
 // deleteApiKey godoc
+//
 //	@Tags		api_key
 //	@Accept		json
 //	@Produce	json
@@ -93,7 +108,7 @@ func postCreateApiKey(c *gin.Context) {
 //	@Failure	400	{object}	RequestError
 //	@Failure	404	{object}	RequestError
 //	@Failure	500	{object}	RequestError
-//	@Router		/api_keys/{key} [delete]
+//	@Router		/api-keys/{key} [delete]
 func deleteApiKey(c *gin.Context) {
 	api_key_key := ExtractApiKeyKey(c)
 	manager := ExtractApiKeyManager(c)

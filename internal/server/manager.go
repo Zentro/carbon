@@ -58,6 +58,10 @@ func (m *Manager) Create(s *domain.Server) error {
 	return nil
 }
 
+func (m *Manager) Update(s *domain.Server) error {
+	return nil
+}
+
 func (m *Manager) Collection() ([]*domain.Server, error) {
 	var servers []*domain.Server
 	if err := m.db.Find(&servers).Error; err != nil {

@@ -3,6 +3,8 @@ package api_key
 import (
 	"carbon/domain"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 
 	"github.com/apex/log"
 	"gorm.io/gorm"
@@ -56,4 +58,15 @@ func (m *Manager) Delete(key string) error {
 		return err
 	}
 	return nil
+}
+
+// GenerateRandomKey will generate a cryptographically random 64 char key which
+// should always be unique.
+func GenerateRandomKey() (string, error) {
+	bytes := make([]byte, 32) // 32 bytes = 64 hex characters
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }
