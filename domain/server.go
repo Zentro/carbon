@@ -39,13 +39,13 @@ func (r *Server) ID() string {
 	return strconv.Itoa(r.ServerID)
 }
 
-type ServerStatus string
+type ServerStatus int
 
 const (
-	StatusOnline  = "online"
-	StatusOffline = "offline"
-	StatusHidden  = "hidden"
-	StatusCrashed = "crashed"
+	StatusOnline  ServerStatus = 1
+	StatusOffline ServerStatus = 2
+	StatusHidden  ServerStatus = 3
+	StatusCrashed ServerStatus = 4
 )
 
 func (st ServerStatus) IsValid() bool {

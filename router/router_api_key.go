@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Rafael Galvan
+// Copyright (C) 2022-2025 Rafael Galvan
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -13,18 +13,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package domain
+package router
 
-import "strconv"
+import "github.com/gin-gonic/gin"
 
-type Player struct {
-	PlayerID    int
-	Role        int
-	Name        string
-	PlayerState int
-	ServerID    int
+func getAllApiKeys(c *gin.Context) {
+
 }
 
-func (r *Player) ID() string {
-	return strconv.Itoa(r.PlayerID)
+func getApiKey(c *gin.Context) {
+
+}
+
+func postCreateApiKey(c *gin.Context) {
+
+}
+
+func deleteApiKey(c *gin.Context) {
+
 }

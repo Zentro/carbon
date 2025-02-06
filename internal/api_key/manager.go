@@ -3,6 +3,7 @@ package api_key
 import (
 	"carbon/domain"
 	"context"
+
 	"github.com/apex/log"
 	"gorm.io/gorm"
 )
@@ -27,12 +28,12 @@ func (m *Manager) init() error {
 	return nil
 }
 
-func (m *Manager) FindByKey(key string) (*domain.ApiKey, error) {
+func (m *Manager) FindByKey(key string) (domain.ApiKey, error) {
 	var apiKey domain.ApiKey
 	if err := m.db.First(&apiKey, "key = ?", key).Error; err != nil {
-		return nil, err
+		return domain.ApiKey{}, err
 	}
-	return &apiKey, nil
+	return apiKey, nil
 }
 
 func (m *Manager) Create(apiKey domain.ApiKey) error {

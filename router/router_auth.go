@@ -52,8 +52,6 @@ type UserAuthRefreshRequest struct {
 }
 
 // ShowAccount godoc
-// @Summary      Processes user authentication by validating credentials.
-// @Description  Validates provided username and password to authenticate the user. No session management is handled.
 // @Tags         auth
 // @Accept       json
 // @Produce      json

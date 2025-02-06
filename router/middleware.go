@@ -17,6 +17,7 @@ package router
 
 import (
 	"carbon/domain"
+	"carbon/internal/api_key"
 	"carbon/internal/resource"
 	"carbon/internal/server"
 	"carbon/internal/token"
@@ -41,6 +42,13 @@ func AttachCorsHeaders() gin.HandlerFunc {
 		// Around 2 hours, which is allowable by most browsers including Chromium.
 		// @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age#Directives
 		c.Header("Access-Control-Max-Age", "7200")
+		c.Next()
+	}
+}
+
+func AttachApiKeyManager(m *api_key.Manager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set("api_key_manager", m)
 		c.Next()
 	}
 }
@@ -80,6 +88,13 @@ func AttachTokenManager(m *token.Manager) gin.HandlerFunc {
 	}
 }
 
+func ExtractApiKeyManager(c *gin.Context) *api_key.Manager {
+	if v, ok := c.Get("api_key_manager"); ok {
+		return v.(*api_key.Manager)
+	}
+	panic("router/middleware: api key manager not present in context")
+}
+
 // ExtractApiClient returns the remote API client instance and set it into the
 // gin.Context
 func ExtractApiClient(c *gin.Context) remote.Client {
@@ -107,6 +122,8 @@ func ExtractServerManager(c *gin.Context) *server.Manager {
 	panic("router/middleware: server manager not present in context")
 }
 
+// ExtractTokenManager returns the token manager instance and set it into the
+// gin.Context
 func ExtractTokenManager(c *gin.Context) *token.Manager {
 	if v, ok := c.Get("token_manager"); ok {
 		return v.(*token.Manager)
@@ -140,17 +157,17 @@ func ResourceExists() gin.HandlerFunc {
 // the request context.
 func ServerExists() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var r *domain.Server
 		if c.Param("server") != "" {
+			var s *domain.Server
 			manager := ExtractServerManager(c)
 			serverId, _ := strconv.Atoi(c.Param("server"))
-			r, _ := manager.FindByID(serverId)
+			s, err := manager.FindByID(serverId)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "The requested resource could not be found."})
+				return
+			}
+			c.Set("server", s)
 		}
-		if r == nil {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "The requested resource could not be found."})
-			return
-		}
-		c.Set("server", r)
 		c.Next()
 	}
 }
@@ -195,8 +212,84 @@ func ExtractToken(c *gin.Context) domain.Token {
 	return v.(domain.Token)
 }
 
+// RequireApiAuthorization will only check if the proper API authentication
+// heads are present.
 func RequireApiAuthorization() gin.HandlerFunc {
-	return func(c *gin.Context) {}
+	return func(c *gin.Context) {
+		key := strings.SplitN(c.GetHeader("Api-Authorization"), " ", 2)
+
+		if len(key) != 2 || key[0] != "Bearer" {
+			c.Header("WWW-Authenticate", "Bearer")
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "The required authorization heads were not present in the request.",
+			})
+
+			return
+		}
+
+		var r domain.ApiKey
+		manager := ExtractApiKeyManager(c)
+		r, dbErr := manager.FindByKey(key[1])
+		if dbErr != nil {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "You are not authorized to access this endpoint.",
+			})
+
+			return
+		}
+
+		// Pass the role and an entire copy of the key further up the context.
+		c.Set("apiRole", r.Role)
+		c.Set("apiKey", r)
+	}
+}
+
+// RoleRequired will check if the required role matches the role present in the context.
+func RoleRequired(required Role) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		roleAny, exists := c.Get("apiRole")
+		if exists {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "The required authorization heads were not present in the request.",
+			})
+
+			return
+		}
+
+		roleStr, ok := roleAny.(string)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "The role type in the authorization heads are not of the expected type.",
+			})
+
+			return
+		}
+
+		role := Role(roleStr)
+
+		if !role.IsValid() {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "The role in the authorization heads could not be determined.",
+			})
+
+			return
+		}
+
+		if role.IsOperator() {
+			c.Next()
+			return
+		}
+
+		if role != required {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "You are not authorized to access this endpoint.",
+			})
+
+			return
+		}
+
+		c.Next()
+	}
 }
 
 // RequireAuthorization will only check if the proper authentication heads

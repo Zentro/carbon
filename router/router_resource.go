@@ -41,7 +41,6 @@ func getResource(c *gin.Context) {
 		return
 	}
 
-	// We can't extract from cache yet, we don't cache individual resources yet.
 	c.JSON(http.StatusOK, gin.H{
 		"resource": resource,
 	})

@@ -18,7 +18,7 @@ package domain
 // ApiKey represents a high level definition of an API key.
 type ApiKey struct {
 	// ID is the primary key of the API key
-	ID uint `gorm:"primaryKey" json:"api_key_id"`
+	ApiKeyID uint `gorm:"primaryKey" json:"api_key_id"`
 	// USerID references the user who the API key belongs to
 	UserID uint `gorm:"not null" json:"api_key_user_id"`
 	// Key is the actual API key string
