@@ -62,8 +62,8 @@ import (
 //	@host		localhost:8080
 //	@BasePath	/
 
-//	@externalDocs.description	OpenAPI
-//	@externalDocs.url			https://swagger.io/resources/open-api/
+// @externalDocs.description	OpenAPI
+// @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 	cmd.Execute()
 }

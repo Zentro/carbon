@@ -29,7 +29,7 @@ func Initialize() (*gorm.DB, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=true",
 		db.Username, db.Password, db.Host, db.Database, db.Charset)
 	instance, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		Logger: logger.Default.LogMode(logger.Error),
 	})
 
 	return instance, err

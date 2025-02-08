@@ -18,6 +18,7 @@ package cmd
 import (
 	"carbon/config"
 	"carbon/internal/api_key"
+	"carbon/internal/client"
 	"carbon/internal/resource"
 	"carbon/internal/server"
 	"carbon/internal/token"
@@ -115,12 +116,18 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 		log.WithField("error", err).Fatal("could not initialze the api key manager")
 	}
 
+	cm, err := client.NewManager(cmd.Context(), database)
+	if err != nil {
+		log.WithField("error", err).Fatal("could not initialze the client manager")
+	}
+
 	managers := router.ManagerGroup{
 		ResourceManager: rm,
 		ServerManager:   sm,
 		UserManager:     um,
 		TokenManager:    tm,
 		ApiKeyManager:   km,
+		ClientManager:   cm,
 	}
 
 	r := router.NewClient(remoteClient, managers)

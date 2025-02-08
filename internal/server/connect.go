@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type ServerKnockResponse struct {
+type ServerConnectResponse struct {
 	Type   uint32
 	Source uint32
 	Size   uint32
@@ -22,9 +22,9 @@ var (
 	ErrTimeout      = errors.New("connection timeout")
 )
 
-// Knock imitates legacy "MasterServer" behavior, by connecting directly to the server
+// Connect imitates legacy "MasterServer" behavior, by connecting directly to the server
 // and "knocking" to verify it's a real server. This is a blocking operation.
-func Knock(ip string, port int, version string) (*ServerKnockResponse, error) {
+func Connect(ip string, port int, version string) (*ServerConnectResponse, error) {
 	addr := fmt.Sprintf("%s:%d", ip, port)
 	conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
 	if err != nil {
@@ -71,7 +71,7 @@ func Knock(ip string, port int, version string) (*ServerKnockResponse, error) {
 		return nil, errors.New("invalid response size")
 	}
 
-	resp := &ServerKnockResponse{
+	resp := &ServerConnectResponse{
 		Type:   binary.LittleEndian.Uint32(buffer[0:4]),
 		Source: binary.LittleEndian.Uint32(buffer[4:8]),
 		Size:   binary.LittleEndian.Uint32(buffer[8:12]),

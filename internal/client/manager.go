@@ -1,4 +1,4 @@
-// Copyright (C) 2022 Rafael Galvan
+// Copyright (C) 2022-2025 Rafael Galvan
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -13,13 +13,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package server
+package client
 
 import (
 	"carbon/domain"
 	"context"
-	"database/sql"
-	"time"
 
 	"github.com/apex/log"
 	"gorm.io/gorm"
@@ -36,52 +34,52 @@ func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 }
 
 func (m *Manager) init() error {
-	log.Info("initializing server schema into the database...")
+	log.Info("initializing client schema into the database...")
 
-	if err := m.db.AutoMigrate(&domain.Server{}); err != nil {
+	if err := m.db.AutoMigrate(&domain.Client{}); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (m *Manager) FindByID(id int) (*domain.Server, error) {
-	var server domain.Server
-	if err := m.db.First(&server, id).Error; err != nil {
+func (m *Manager) FindByIDForServer(s *domain.Server, id int) (*domain.Client, error) {
+	var c domain.Client
+	if err := m.db.Model(&s).Preload("Clients", "id = ?", id).First(&c).Error; err != nil {
 		return nil, err
 	}
-	return &server, nil
+
+	return &c, nil
 }
 
-func (m *Manager) Create(s *domain.Server) error {
-	if err := m.db.Create(&s).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *Manager) Update(s *domain.Server) error {
-	return nil
-}
-
-func (m *Manager) Collection() ([]*domain.Server, error) {
-	var servers []*domain.Server
-	if err := m.db.Find(&servers).Error; err != nil {
+func (m *Manager) CollectionForServer(sid int) (*domain.Client, error) {
+	var c domain.Client
+	if err := m.db.Where("server_id = ?", sid).Find(&c).Error; err != nil {
 		return nil, err
 	}
-	return servers, nil
+
+	return &c, nil
+}
+
+func (m *Manager) FindByID(id int) (*domain.Client, error) {
+	var c domain.Client
+	if err := m.db.First(&c, id).Error; err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+func (m *Manager) Collection() ([]*domain.Client, error) {
+	var c []*domain.Client
+	if err := m.db.Find(&c).Error; err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 func (m *Manager) Delete(id int) error {
-	if err := m.db.Delete(&domain.Server{}, id).Error; err != nil {
+	if err := m.db.Delete(&domain.Client{}, id).Error; err != nil {
 		return err
 	}
 	return nil
-}
-
-func (m *Manager) UpdateLastSync(id int) error {
-	return m.db.Model(&domain.Server{}).Where("server_id = ?", id).Update("last_sync_date", sql.NullTime{
-		Time:  time.Now(),
-		Valid: true,
-	}).Error
 }

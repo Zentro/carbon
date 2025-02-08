@@ -18,6 +18,7 @@ package router
 import (
 	"carbon/config"
 	"carbon/domain"
+	"carbon/internal/server"
 	"net/http"
 	"time"
 
@@ -80,13 +81,13 @@ func getServer(c *gin.Context) {
 //	@Failure	500	{object}	RequestError
 //	@Router		/servers [post]
 func postCreateServer(c *gin.Context) {
-	var newServerRequest domain.Server
-	if err := c.BindJSON(&newServerRequest); err != nil {
+	var s domain.Server
+	if err := c.BindJSON(&s); err != nil {
 		return
 	}
 
 	manager := ExtractServerManager(c)
-	if err := manager.Create(&newServerRequest); err != nil {
+	if err := manager.Create(&s); err != nil {
 		NewError(err).Abort(c)
 		return
 	}
@@ -130,11 +131,83 @@ func putUpdateServer(c *gin.Context) {
 //	@Failure	500	{object}	RequestError
 //	@Router		/servers/{server}/power [patch]
 func patchServerPower(c *gin.Context) {
-	c.Status(http.StatusNotImplemented)
+	s := ExtractServer(c)
+	manager := ExtractServerManager(c)
+
+	var data struct {
+		PowerStatus ServerStatus `json:"power_status"`
+	}
+
+	if err := c.BindJSON(&data); err != nil {
+		return
+	}
+
+	// Generally, the server could report itself as "crashed", but that
+	// isn't common. Rather, we expect the server to always report itself
+	// as "online" or "offline".
+	if !data.PowerStatus.IsValid() {
+		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
+			"error": "The power status provided was not valid, should be one of \"online\", \"offline\"",
+		})
+	}
+
+	// Avoid wasting resources by trying to set the server power status
+	// to what it already is.
+	if s.GetPowerStatus() == data.PowerStatus {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Cannot set the status of the server with the same status.",
+		})
+	}
+
+	// If we're attempting to set the server "online" we need to verify
+	// that we can connect to it. The process should expire before the
+	// HTTP connection does so we can return to the requester whether
+	// the server power status change was successful or if we couldn't
+	// establish whether or not the server is alive.
+	if data.PowerStatus.IsOnline() {
+		if _, err := server.Connect(s.IP, s.Port, s.Version); err != nil {
+			NewError(err).Abort(c)
+			return
+		}
+	}
+
+	s.SetPowerStatus(data.PowerStatus)
+	if err := manager.Update(s); err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
-func postSyncServer(c *gin.Context) {
-	c.Status(http.StatusNotImplemented)
+// putSyncServer godoc
+//
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	204	"No Content"
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/servers/{server}/sync [put]
+func putSyncServer(c *gin.Context) {
+	s := ExtractServer(c)
+
+	// We only allow a server to in an "online" power status, because otherwise
+	// the cleanup routine will continue to treat the server as available when
+	// it's really not.
+	if !s.GetPowerStatus().IsOnline() {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "Cannot sync a server that is stopped or crashed.",
+		})
+	}
+
+	if err := ExtractServerManager(c).UpdateLastSync(s.ServerID); err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 // postCreateServerClient godoc
@@ -188,8 +261,8 @@ func getServerClient(c *gin.Context) {
 //	@Failure	400	{object}	RequestError
 //	@Failure	404	{object}	RequestError
 //	@Failure	500	{object}	RequestError
-//	@Router		/servers/{server}/client/join [post]
-func postClientJoinRequest(c *gin.Context) {
+//	@Router		/servers/{server}/client/request [post]
+func postClientRequest(c *gin.Context) {
 	user := ExtractUser(c)
 	server := ExtractServer(c)
 
@@ -221,8 +294,8 @@ func postClientJoinRequest(c *gin.Context) {
 //	@Failure	400	{object}	RequestError
 //	@Failure	404	{object}	RequestError
 //	@Failure	500	{object}	RequestError
-//	@Router		/servers/{server}/client/join [get]
-func getClientJoinRequest(c *gin.Context) {
+//	@Router		/servers/{server}/client/request [get]
+func getClientRequest(c *gin.Context) {
 	var req struct {
 		Token string `json:"token"`
 	}

@@ -19,6 +19,7 @@ import (
 	"carbon/config"
 	"carbon/domain"
 	"carbon/internal/api_key"
+	"carbon/internal/client"
 	"carbon/internal/resource"
 	"carbon/internal/server"
 	"carbon/internal/token"
@@ -42,9 +43,11 @@ type ManagerGroup struct {
 	UserManager     *user.Manager
 	TokenManager    *token.Manager
 	ApiKeyManager   *api_key.Manager
+	ClientManager   *client.Manager
 }
 
 type Role = domain.ApiKeyRole
+type ServerStatus = domain.ServerStatus
 
 func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	debug := config.Get().Debug
@@ -98,21 +101,28 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 
 	router.GET("/servers", getAllServers)
 	router.GET("/servers/:server", ServerExists(), getServer)
-	router.POST("/servers/:server/clients/join",
-		RequireAuthorization(), ServerExists(), postClientJoinRequest)
+	router.POST("/servers/:server/clients/request",
+		RequireAuthorization(), ServerExists(), postClientRequest)
 
 	server := router.Group("/servers/:server")
-	server.Use(ServerExists(), RoleRequired(Role("user")))
+	server.Use(RequireApiAuthorization(), RoleRequired(Role("user")), ServerExists())
 	{
 		server.POST("", postCreateServer)
 		server.PUT("", putUpdateServer)
-		server.POST("/sync", postSyncServer)
+		server.PUT("/sync", putSyncServer)
 		server.PATCH("/power", patchServerPower)
 
 		server.GET("/clients", getAllServerClients)
 		server.GET("/clients/:client", getServerClient)
-		server.GET("/clients/join", getClientJoinRequest)
+		server.GET("/clients/request", getClientRequest)
 		server.POST("/clients", postCreateServerClient)
+	}
+
+	client := router.Group("/clients")
+	client.Use(RoleRequired(Role("operator")))
+	{
+		client.GET("")
+		client.GET("/:client")
 	}
 
 	api_key := router.Group("/api-keys")

@@ -920,6 +920,42 @@ const docTemplate = `{
                 }
             }
         },
+        "/servers/{server}/sync": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "server"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            }
+        },
         "/users/me/": {
             "get": {
                 "consumes": [
@@ -1024,6 +1060,39 @@ const docTemplate = `{
                 },
                 "api_key_user_id": {
                     "description": "USerID references the user who the API key belongs to",
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.Client": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "Name is the player name",
+                    "type": "string"
+                },
+                "playerID": {
+                    "description": "PlayerID is the primary key of the Player",
+                    "type": "integer"
+                },
+                "playerState": {
+                    "description": "PlayerState specifies the player state",
+                    "type": "integer"
+                },
+                "role": {
+                    "description": "Role specifies the player role from the server",
+                    "type": "integer"
+                },
+                "server": {
+                    "description": "Server is who the Player belongs to",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/domain.Server"
+                        }
+                    ]
+                },
+                "serverID": {
+                    "description": "ServerID is the foreign key",
                     "type": "integer"
                 }
             }
@@ -1215,6 +1284,12 @@ const docTemplate = `{
                 "version"
             ],
             "properties": {
+                "clients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Client"
+                    }
+                },
                 "description": {
                     "type": "string"
                 },
@@ -1229,6 +1304,9 @@ const docTemplate = `{
                 },
                 "is_visible": {
                     "type": "boolean"
+                },
+                "last_sync_time": {
+                    "type": "integer"
                 },
                 "max_clients": {
                     "type": "integer"
@@ -1249,27 +1327,12 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "server_state": {
-                    "$ref": "#/definitions/domain.ServerStatus"
+                    "type": "string"
                 },
                 "version": {
                     "type": "string"
                 }
             }
-        },
-        "domain.ServerStatus": {
-            "type": "integer",
-            "enum": [
-                1,
-                2,
-                3,
-                4
-            ],
-            "x-enum-varnames": [
-                "StatusOnline",
-                "StatusOffline",
-                "StatusHidden",
-                "StatusCrashed"
-            ]
         },
         "domain.User": {
             "type": "object",

@@ -16,6 +16,7 @@
 package router
 
 import (
+	"carbon/internal/server"
 	"carbon/remote"
 	"errors"
 	"net/http"
@@ -71,6 +72,12 @@ func (e *RequestError) Abort(c *gin.Context) {
 			"error": "The requested resource could not be found.",
 		})
 		return
+	}
+
+	if errors.Is(e.err, server.ErrTimeout) {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "The connection to the server could not be established.",
+		})
 	}
 
 	c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
