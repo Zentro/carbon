@@ -7,7 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ShowAccount godoc
+// getAllResources godoc
+//
 //	@Tags		resource
 //	@Accept		json
 //	@Produce	json
@@ -22,14 +23,16 @@ func getAllResources(c *gin.Context) {
 	})
 }
 
-// ShowAccount godoc
+// getResource godoc
+//
 //	@Tags		resource
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	domain.Resource
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		resource	path		string	true	"Resource Identifier"
+//	@Success	200			{object}	domain.Resource
+//	@Failure	400			{object}	RequestError
+//	@Failure	404			{object}	RequestError
+//	@Failure	500			{object}	RequestError
 //	@Router		/resources/{resource} [get]
 func getResource(c *gin.Context) {
 	client := ExtractApiClient(c)
@@ -46,14 +49,16 @@ func getResource(c *gin.Context) {
 	})
 }
 
-// ShowAccount godoc
+// getResourceReviews godoc
+//
 //	@Tags		resource
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	[]domain.ResourceReview
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		resource	path		string	true	"Resource Identifier"
+//	@Success	200			{object}	[]domain.ResourceReview
+//	@Failure	400			{object}	RequestError
+//	@Failure	404			{object}	RequestError
+//	@Failure	500			{object}	RequestError
 //	@Router		/resources/{resource}/reviews [get]
 func getResourceReviews(c *gin.Context) {
 	client := ExtractApiClient(c)
@@ -69,14 +74,16 @@ func getResourceReviews(c *gin.Context) {
 	})
 }
 
-// ShowAccount godoc
+// getResourceVersions godoc
+//
 //	@Tags		resource
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	[]domain.ResourceVersion
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		resource	path		string	true	"Resource Identifier"
+//	@Success	200			{object}	[]domain.ResourceVersion
+//	@Failure	400			{object}	RequestError
+//	@Failure	404			{object}	RequestError
+//	@Failure	500			{object}	RequestError
 //	@Router		/resources/{resource}/versions [get]
 func getResourceVersions(c *gin.Context) {
 	client := ExtractApiClient(c)
@@ -92,14 +99,16 @@ func getResourceVersions(c *gin.Context) {
 	})
 }
 
-// ShowAccount godoc
+// getResourceVersion godoc
+//
 //	@Tags		resource
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	domain.ResourceVersion
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		version	path		string	true	"Resource Version Identifier"
+//	@Success	200		{object}	domain.ResourceVersion
+//	@Failure	400		{object}	RequestError
+//	@Failure	404		{object}	RequestError
+//	@Failure	500		{object}	RequestError
 //	@Router		/resource-versions/{version} [get]
 func getResourceVersion(c *gin.Context) {
 	version, err := ExtractApiClient(c).GetResourceVersion(c, c.Param("version"))
@@ -112,11 +121,23 @@ func getResourceVersion(c *gin.Context) {
 	})
 }
 
+// getResourceUpdates godoc
+//
+//	@Tags		resource
+//	@Accept		json
+//	@Produce	json
+//	@Param		resource	path		string	true	"Resource Identifier"
+//	@Success	200			{object}	domain.ResourceUpdate
+//	@Failure	400			{object}	RequestError
+//	@Failure	404			{object}	RequestError
+//	@Failure	500			{object}	RequestError
+//	@Router		/resources/:resource/updates [get]
 func getResourceUpdates(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }
 
-// ShowAccount godoc
+// getAllCategories godoc
+//
 //	@Tags		resource
 //	@Accept		json
 //	@Produce	json
@@ -137,14 +158,16 @@ func getAllCategories(c *gin.Context) {
 	})
 }
 
-// ShowAccount godoc
+// getCategory godoc
+//
 //	@Tags		resource
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	domain.ResourceCategory
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		category	path		string	true	"Resource Category Identifier"
+//	@Success	200			{object}	domain.ResourceCategory
+//	@Failure	400			{object}	RequestError
+//	@Failure	404			{object}	RequestError
+//	@Failure	500			{object}	RequestError
 //	@Router		/resource-categories/{category} [get]
 func getCategory(c *gin.Context) {
 	res, err := ExtractApiClient(c).GetResourceCategory(c)

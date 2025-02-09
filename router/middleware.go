@@ -358,6 +358,29 @@ func RequireAuthorization() gin.HandlerFunc {
 	}
 }
 
+// RequireResourceOwnership will check if the requester has actual ownership
+// over the resource.
+func RequireResourceOwnership() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		apiKeyCtx, ok := c.Get("apiKey")
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "The required authorization heads were not present in the request.",
+			})
+			return
+		}
+
+		apiKey := apiKeyCtx.(*domain.ApiKey)
+		s := ExtractServer(c)
+
+		if !apiKey.Role.IsOperator() && s.OwnerID != int(apiKey.UserID) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "You are not authorized to access this resource.",
+			})
+		}
+	}
+}
+
 func ExtractAuthorization(c *gin.Context) string {
 	v, ok := c.Get("Authorization")
 	if !ok {

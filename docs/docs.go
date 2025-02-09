@@ -268,6 +268,99 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/session/{server}/challenge": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server Identifier",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/session/{server}/verify": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server Identifier",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            }
+        },
         "/resource-categories/": {
             "get": {
                 "consumes": [
@@ -321,6 +414,15 @@ const docTemplate = `{
                 "tags": [
                     "resource"
                 ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource Category Identifier",
+                        "name": "category",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -359,6 +461,15 @@ const docTemplate = `{
                 ],
                 "tags": [
                     "resource"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource Version Identifier",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -430,6 +541,54 @@ const docTemplate = `{
                 }
             }
         },
+        "/resources/:resource/updates": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource Identifier",
+                        "name": "resource",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ResourceUpdate"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.RequestError"
+                        }
+                    }
+                }
+            }
+        },
         "/resources/{resource}": {
             "get": {
                 "consumes": [
@@ -440,6 +599,15 @@ const docTemplate = `{
                 ],
                 "tags": [
                     "resource"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource Identifier",
+                        "name": "resource",
+                        "in": "path",
+                        "required": true
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -479,6 +647,15 @@ const docTemplate = `{
                 ],
                 "tags": [
                     "resource"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource Identifier",
+                        "name": "resource",
+                        "in": "path",
+                        "required": true
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -521,6 +698,15 @@ const docTemplate = `{
                 ],
                 "tags": [
                     "resource"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource Identifier",
+                        "name": "resource",
+                        "in": "path",
+                        "required": true
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -604,6 +790,17 @@ const docTemplate = `{
                 "tags": [
                     "server"
                 ],
+                "parameters": [
+                    {
+                        "description": "Server Object",
+                        "name": "server",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Server"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -643,6 +840,15 @@ const docTemplate = `{
                 "tags": [
                     "server"
                 ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server Identifier",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -680,82 +886,27 @@ const docTemplate = `{
                 "tags": [
                     "server"
                 ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server Identifier",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    {
+                        "description": "Server Object",
+                        "name": "server",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/router.RequestError"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/router.RequestError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/router.RequestError"
+                            "$ref": "#/definitions/domain.Server"
                         }
                     }
-                }
-            }
-        },
-        "/servers/{server}/client/join": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "server"
                 ],
                 "responses": {
                     "204": {
                         "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/router.RequestError"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/router.RequestError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/router.RequestError"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "server"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -789,6 +940,15 @@ const docTemplate = `{
                 "tags": [
                     "server"
                 ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server Identifier",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "204": {
                         "description": "No Content"
@@ -822,6 +982,15 @@ const docTemplate = `{
                 ],
                 "tags": [
                     "server"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server Identifier",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
+                    }
                 ],
                 "responses": {
                     "204": {
@@ -859,6 +1028,22 @@ const docTemplate = `{
                 "tags": [
                     "server"
                 ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server Identifier",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Client Identifier",
+                        "name": "client",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "204": {
                         "description": "No Content"
@@ -895,6 +1080,24 @@ const docTemplate = `{
                 "tags": [
                     "server"
                 ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server Identifier",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data Object",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
                 "responses": {
                     "204": {
                         "description": "No Content"
@@ -930,6 +1133,15 @@ const docTemplate = `{
                 ],
                 "tags": [
                     "server"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Server Identifier",
+                        "name": "server",
+                        "in": "path",
+                        "required": true
+                    }
                 ],
                 "responses": {
                     "204": {
@@ -1245,6 +1457,32 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.ResourceUpdate": {
+            "type": "object",
+            "properties": {
+                "attach_count": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "post_Date": {
+                    "type": "integer"
+                },
+                "resource_id": {
+                    "type": "integer"
+                },
+                "resource_update_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "view_url": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.ResourceVersion": {
             "type": "object",
             "properties": {
@@ -1305,7 +1543,10 @@ const docTemplate = `{
                 "is_visible": {
                     "type": "boolean"
                 },
-                "last_sync_time": {
+                "last_Update_date": {
+                    "type": "integer"
+                },
+                "last_sync_date": {
                     "type": "integer"
                 },
                 "max_clients": {

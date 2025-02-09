@@ -95,17 +95,32 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	auth.POST("/login", postAuthLogin)
 	auth.POST("/logout", RequireAuthorization(), postAuthLogout)
 	auth.POST("/refresh", postAuthRefresh)
+	auth.POST("/session/:server/challenge",
+		RequireAuthorization(),
+		ServerExists(),
+		postAuthSessionChallenge,
+	)
+	auth.GET("/session/:server/verify",
+		RequireApiAuthorization(),
+		RoleRequired(Role("user")),
+		ServerExists(),
+		RequireResourceOwnership(),
+		getAuthSessionVerify,
+	)
 
 	router.GET("/users/me", RequireAuthorization(), getMe)
 	router.GET("/users/:user", getUser)
 
 	router.GET("/servers", getAllServers)
 	router.GET("/servers/:server", ServerExists(), getServer)
-	router.POST("/servers/:server/clients/request",
-		RequireAuthorization(), ServerExists(), postClientRequest)
 
 	server := router.Group("/servers/:server")
-	server.Use(RequireApiAuthorization(), RoleRequired(Role("user")), ServerExists())
+	server.Use(
+		RequireApiAuthorization(),
+		RoleRequired(Role("user")),
+		ServerExists(),
+		RequireResourceOwnership(),
+	)
 	{
 		server.POST("", postCreateServer)
 		server.PUT("", putUpdateServer)
@@ -114,7 +129,6 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 
 		server.GET("/clients", getAllServerClients)
 		server.GET("/clients/:client", getServerClient)
-		server.GET("/clients/request", getClientRequest)
 		server.POST("/clients", postCreateServerClient)
 	}
 

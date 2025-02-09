@@ -16,11 +16,9 @@
 package router
 
 import (
-	"carbon/config"
 	"carbon/domain"
 	"carbon/internal/server"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -59,10 +57,11 @@ func getAllServers(c *gin.Context) {
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	domain.Server
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		server	path		string	true	"Server Identifier"
+//	@Success	200		{object}	domain.Server
+//	@Failure	400		{object}	RequestError
+//	@Failure	404		{object}	RequestError
+//	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server} [get]
 func getServer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
@@ -75,10 +74,11 @@ func getServer(c *gin.Context) {
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	domain.Server
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		server	body		domain.Server	true	"Server Object"
+//	@Success	200		{object}	domain.Server
+//	@Failure	400		{object}	RequestError
+//	@Failure	404		{object}	RequestError
+//	@Failure	500		{object}	RequestError
 //	@Router		/servers [post]
 func postCreateServer(c *gin.Context) {
 	var s domain.Server
@@ -100,10 +100,12 @@ func postCreateServer(c *gin.Context) {
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
-//	@Success	204	"No Content"
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		server	path	string			true	"Server Identifier"
+//	@Param		server	body	domain.Server	true	"Server Object"
+//	@Success	204		"No Content"
+//	@Failure	400		{object}	RequestError
+//	@Failure	404		{object}	RequestError
+//	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server} [put]
 func putUpdateServer(c *gin.Context) {
 	var updateServerRequest domain.Server
@@ -125,10 +127,12 @@ func putUpdateServer(c *gin.Context) {
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
-//	@Success	204	"No Content"
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		server	path	string	true	"Server Identifier"
+//	@Param		data	body	object	true	"Data Object"
+//	@Success	204		"No Content"
+//	@Failure	400		{object}	RequestError
+//	@Failure	404		{object}	RequestError
+//	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server}/power [patch]
 func patchServerPower(c *gin.Context) {
 	s := ExtractServer(c)
@@ -185,10 +189,11 @@ func patchServerPower(c *gin.Context) {
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
-//	@Success	204	"No Content"
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		server	path	string	true	"Server Identifier"
+//	@Success	204		"No Content"
+//	@Failure	400		{object}	RequestError
+//	@Failure	404		{object}	RequestError
+//	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server}/sync [put]
 func putSyncServer(c *gin.Context) {
 	s := ExtractServer(c)
@@ -215,10 +220,11 @@ func putSyncServer(c *gin.Context) {
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
-//	@Success	204	"No Content"
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		server	path	string	true	"Server Identifier"
+//	@Success	204		"No Content"
+//	@Failure	400		{object}	RequestError
+//	@Failure	404		{object}	RequestError
+//	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server}/clients [post]
 func postCreateServerClient(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
@@ -229,10 +235,11 @@ func postCreateServerClient(c *gin.Context) {
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
-//	@Success	204	"No Content"
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		server	path	string	true	"Server Identifier"
+//	@Success	204		"No Content"
+//	@Failure	400		{object}	RequestError
+//	@Failure	404		{object}	RequestError
+//	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server}/clients [get]
 func getAllServerClients(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
@@ -243,90 +250,13 @@ func getAllServerClients(c *gin.Context) {
 //	@Tags		server
 //	@Accept		json
 //	@Produce	json
-//	@Success	204	"No Content"
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
+//	@Param		server	path	string	true	"Server Identifier"
+//	@Param		client	path	string	true	"Client Identifier"
+//	@Success	204		"No Content"
+//	@Failure	400		{object}	RequestError
+//	@Failure	404		{object}	RequestError
+//	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server}/clients/{client} [get]
 func getServerClient(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
-}
-
-// postClientJoinRequest godoc
-//
-//	@Tags		server
-//	@Accept		json
-//	@Produce	json
-//	@Success	200	{object}	string
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
-//	@Router		/servers/{server}/client/request [post]
-func postClientRequest(c *gin.Context) {
-	user := ExtractUser(c)
-	server := ExtractServer(c)
-
-	claims := CustomClaims{
-		UserID:   user.UserID,
-		ServerID: server.ServerID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(60 * time.Second)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(config.Get().Secret))
-	if err != nil {
-		NewError(err).Abort(c)
-		return
-	}
-
-	c.String(http.StatusOK, signedToken)
-}
-
-// getClientJoinRequest godoc
-//
-//	@Tags		server
-//	@Accept		json
-//	@Produce	json
-//	@Success	204	"No Content"
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
-//	@Router		/servers/{server}/client/request [get]
-func getClientRequest(c *gin.Context) {
-	var req struct {
-		Token string `json:"token"`
-	}
-
-	if err := c.BindJSON(&req); err != nil {
-		return
-	}
-
-	claims := &CustomClaims{}
-	token, err := jwt.ParseWithClaims(req.Token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(config.Get().Secret), nil
-	})
-
-	if err != nil {
-		NewError(err).Abort(c)
-		return
-	}
-
-	if !token.Valid {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"error": "The provided token could not be validated.",
-		})
-		return
-	}
-
-	if claims.ExpiresAt.Time.Before(time.Now()) {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"error": "The provided token has already expired.",
-		})
-		return
-	}
-
-	c.Status(http.StatusNoContent)
 }

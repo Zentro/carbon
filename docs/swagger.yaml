@@ -138,6 +138,23 @@ definitions:
       resource_version_id:
         type: integer
     type: object
+  domain.ResourceUpdate:
+    properties:
+      attach_count:
+        type: integer
+      message:
+        type: string
+      post_Date:
+        type: integer
+      resource_id:
+        type: integer
+      resource_update_id:
+        type: integer
+      title:
+        type: string
+      view_url:
+        type: string
+    type: object
   domain.ResourceVersion:
     properties:
       download_count:
@@ -171,7 +188,9 @@ definitions:
         type: string
       is_visible:
         type: boolean
-      last_sync_time:
+      last_Update_date:
+        type: integer
+      last_sync_date:
         type: integer
       max_clients:
         type: integer
@@ -407,6 +426,66 @@ paths:
             $ref: '#/definitions/router.RequestError'
       tags:
       - auth
+  /auth/session/{server}/challenge:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Server Identifier
+        in: path
+        name: server
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - auth
+  /auth/session/{server}/verify:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Server Identifier
+        in: path
+        name: server
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - auth
   /resource-categories/:
     get:
       consumes:
@@ -438,6 +517,12 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Resource Category Identifier
+        in: path
+        name: category
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -463,6 +548,12 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Resource Version Identifier
+        in: path
+        name: version
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -511,10 +602,47 @@ paths:
             $ref: '#/definitions/router.RequestError'
       tags:
       - resource
+  /resources/:resource/updates:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Resource Identifier
+        in: path
+        name: resource
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ResourceUpdate'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.RequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.RequestError'
+      tags:
+      - resource
   /resources/{resource}:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Resource Identifier
+        in: path
+        name: resource
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -540,6 +668,12 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Resource Identifier
+        in: path
+        name: resource
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -567,6 +701,12 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Resource Identifier
+        in: path
+        name: resource
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -620,6 +760,13 @@ paths:
     post:
       consumes:
       - application/json
+      parameters:
+      - description: Server Object
+        in: body
+        name: server
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Server'
       produces:
       - application/json
       responses:
@@ -645,6 +792,12 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Server Identifier
+        in: path
+        name: server
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -669,58 +822,23 @@ paths:
     put:
       consumes:
       - application/json
+      parameters:
+      - description: Server Identifier
+        in: path
+        name: server
+        required: true
+        type: string
+      - description: Server Object
+        in: body
+        name: server
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Server'
       produces:
       - application/json
       responses:
         "204":
           description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/router.RequestError'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/router.RequestError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/router.RequestError'
-      tags:
-      - server
-  /servers/{server}/client/join:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/router.RequestError'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/router.RequestError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/router.RequestError'
-      tags:
-      - server
-    post:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
         "400":
           description: Bad Request
           schema:
@@ -739,6 +857,12 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Server Identifier
+        in: path
+        name: server
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -761,6 +885,12 @@ paths:
     post:
       consumes:
       - application/json
+      parameters:
+      - description: Server Identifier
+        in: path
+        name: server
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -784,6 +914,17 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Server Identifier
+        in: path
+        name: server
+        required: true
+        type: string
+      - description: Client Identifier
+        in: path
+        name: client
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -807,6 +948,18 @@ paths:
     patch:
       consumes:
       - application/json
+      parameters:
+      - description: Server Identifier
+        in: path
+        name: server
+        required: true
+        type: string
+      - description: Data Object
+        in: body
+        name: data
+        required: true
+        schema:
+          type: object
       produces:
       - application/json
       responses:
@@ -830,6 +983,12 @@ paths:
     put:
       consumes:
       - application/json
+      parameters:
+      - description: Server Identifier
+        in: path
+        name: server
+        required: true
+        type: string
       produces:
       - application/json
       responses:
