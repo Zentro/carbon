@@ -169,7 +169,7 @@ func patchServerPower(c *gin.Context) {
 	// the server power status change was successful or if we couldn't
 	// establish whether or not the server is alive.
 	if data.PowerStatus.IsOnline() {
-		if _, err := server.Connect(s.IP, s.Port, s.Version); err != nil {
+		if _, err := server.Connect(s.Host, s.Port, s.Version); err != nil {
 			NewError(err).Abort(c)
 			return
 		}

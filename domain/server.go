@@ -23,8 +23,8 @@ type Server struct {
 	ServerID       int          `gorm:"primaryKey;autoIncrement" json:"server_id,omitempty"`
 	ServerState    ServerStatus `gorm:"not null" json:"server_state,omitempty"`
 	Name           string       `gorm:"size:255;not null" json:"name" binding:"required"`
-	IP             string       `gorm:"size:255;not null" json:"ip" binding:"required"`
-	Port           int          `gorm:"not null" json:"port" binding:"required"`
+	Host           string       `gorm:"size:255;not null;uniqueIndex:idx_host_port" json:"host" binding:"required"`
+	Port           int          `gorm:"not null;uniqueIndex:idx_host_port" json:"port" binding:"required"`
 	Version        string       `gorm:"size:100;not null" json:"version" binding:"required"`
 	Description    string       `gorm:"type:text;not null" json:"description" binding:"required"`
 	IconUrl        string       `gorm:"size:255" json:"icon_url"`

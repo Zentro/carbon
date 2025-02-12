@@ -64,6 +64,14 @@ func (m *Manager) Update(s *domain.Server) error {
 	return nil
 }
 
+func (m *Manager) FindByHostAndPort(host string, port int) (*domain.Server, error) {
+	var server domain.Server
+	if err := m.db.Where("host = ? AND port = ?", host, port).First(&server).Error; err != nil {
+		return nil, err
+	}
+	return &server, nil
+}
+
 func (m *Manager) Collection() ([]*domain.Server, error) {
 	var servers []*domain.Server
 	if err := m.db.Find(&servers).Error; err != nil {

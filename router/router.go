@@ -95,17 +95,16 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	auth.POST("/login", postAuthLogin)
 	auth.POST("/logout", RequireAuthorization(), postAuthLogout)
 	auth.POST("/refresh", postAuthRefresh)
-	auth.POST("/session/:server/challenge",
+	auth.POST("/sessions/join",
 		RequireAuthorization(),
-		ServerExists(),
-		postAuthSessionChallenge,
+		postAuthSessionsJoin,
 	)
-	auth.GET("/session/:server/verify",
+	auth.GET("/sessions/:server/verify",
 		RequireApiAuthorization(),
 		RoleRequired(Role("user")),
 		ServerExists(),
 		RequireResourceOwnership(),
-		getAuthSessionVerify,
+		getAuthSessionsVerify,
 	)
 
 	router.GET("/users/me", RequireAuthorization(), getMe)

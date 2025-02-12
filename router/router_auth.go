@@ -193,20 +193,35 @@ func postAuthRefresh(c *gin.Context) {
 	})
 }
 
-// postAuthSessionChallenge godoc
+// postAuthSessionsJoin godoc
 //
 //	@Tags		auth
 //	@Accept		json
 //	@Produce	json
-//	@Param		server	path		string	true	"Server Identifier"
+//	@Param		data	body	object	true	"Data Object"
 //	@Success	200		{object}	string
 //	@Failure	400		{object}	RequestError
 //	@Failure	404		{object}	RequestError
 //	@Failure	500		{object}	RequestError
-//	@Router		/auth/session/{server}/challenge [post]
-func postAuthSessionChallenge(c *gin.Context) {
+//	@Router		/auth/sessions/join [post]
+func postAuthSessionsJoin(c *gin.Context) {
 	user := ExtractUser(c)
-	server := ExtractServer(c)
+	manager := ExtractServerManager(c)
+
+	var data struct {
+		Host string `json:"host"`
+		Port int    `json:"port"`
+	}
+
+	if err := c.BindJSON(&data); err != nil {
+		return
+	}
+
+	server, err := manager.FindByHostAndPort(data.Host, data.Port)
+	if err != nil {
+		NewError(err).Abort(c)
+		return
+	}
 
 	// The player wants his client to start a chllange so the server
 	// can verify their session against us. The challenge should only
@@ -230,7 +245,7 @@ func postAuthSessionChallenge(c *gin.Context) {
 	c.String(http.StatusOK, signedChallenge)
 }
 
-// getAuthSessionVerify godoc
+// getAuthSessionsVerify godoc
 //
 //	@Tags		auth
 //	@Accept		json
@@ -241,7 +256,7 @@ func postAuthSessionChallenge(c *gin.Context) {
 //	@Failure	404		{object}	RequestError
 //	@Failure	500		{object}	RequestError
 //	@Router		/auth/session/{server}/verify [get]
-func getAuthSessionVerify(c *gin.Context) {
+func getAuthSessionsVerify(c *gin.Context) {
 	server := ExtractServer(c)
 
 	var data struct {
