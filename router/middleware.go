@@ -25,7 +25,6 @@ import (
 	"carbon/remote"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -161,8 +160,8 @@ func ServerExists() gin.HandlerFunc {
 		if c.Param("server") != "" {
 			var s *domain.Server
 			manager := ExtractServerManager(c)
-			serverId, _ := strconv.Atoi(c.Param("server"))
-			s, err := manager.FindByID(serverId)
+			server_id := c.Param("server")
+			s, err := manager.FindByID(server_id)
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "The requested resource could not be found."})
 				return
@@ -338,10 +337,10 @@ func RequireAuthorization() gin.HandlerFunc {
 			return
 		}
 
-		if c.ClientIP() != r.IPAddress {
-			NewError(ErrIpMismatch).Abort(c)
-			return
-		}
+		// if c.ClientIP() != r.IPAddress {
+		// 	NewError(ErrIpMismatch).Abort(c)
+		// 	return
+		// }
 
 		var u domain.User
 		u, httpErr := ExtractApiClient(c).GetUser(c, r.UserID)

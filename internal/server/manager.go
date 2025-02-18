@@ -19,9 +19,11 @@ import (
 	"carbon/domain"
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/apex/log"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -45,9 +47,14 @@ func (m *Manager) init() error {
 	return nil
 }
 
-func (m *Manager) FindByID(id int) (*domain.Server, error) {
+func (m *Manager) FindByID(id string) (*domain.Server, error) {
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err // Return error if the provided ID is not a valid UUID
+	}
+
 	var server domain.Server
-	if err := m.db.First(&server, id).Error; err != nil {
+	if err := m.db.First(&server, "server_id = ?", uuid).Error; err != nil {
 		return nil, err
 	}
 	return &server, nil
@@ -61,6 +68,21 @@ func (m *Manager) Create(s *domain.Server) error {
 }
 
 func (m *Manager) Update(s *domain.Server) error {
+	// uuid, err := uuid.Parse(s.ID)
+	// if err != nil {
+	// 	return err // Return error if the provided ID is not a valid UUID
+	// }
+
+	var server domain.Server
+	if err := m.db.First(&server, "server_id = ?", s.ID()).Error; err != nil {
+		return fmt.Errorf("server not found: %w", err)
+	}
+
+	// Update the fields that need to be changed
+	if err := m.db.Model(&server).Updates(s).Error; err != nil {
+		return fmt.Errorf("failed to update server: %w", err)
+	}
+
 	return nil
 }
 
@@ -87,8 +109,13 @@ func (m *Manager) Delete(id int) error {
 	return nil
 }
 
-func (m *Manager) UpdateLastSync(id int) error {
-	return m.db.Model(&domain.Server{}).Where("server_id = ?", id).Update("last_sync_date", sql.NullTime{
+func (m *Manager) UpdateLastSync(id string) error {
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return err // Return error if the provided ID is not a valid UUID
+	}
+
+	return m.db.Model(&domain.Server{}).Where("server_id = ?", uuid).Update("last_sync_date", sql.NullTime{
 		Time:  time.Now(),
 		Valid: true,
 	}).Error

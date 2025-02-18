@@ -19,6 +19,7 @@ import (
 	"carbon/config"
 	"carbon/domain"
 	"carbon/remote"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -32,7 +33,7 @@ type UserAuthSessionChallengeClaims struct {
 	// The user ID associated with the challenge.
 	UserID int `json:"uid"`
 	// The server ID associated with the challenge.
-	ServerID int `json:"sid"`
+	ServerID string `json:"sid"`
 	// The typical JWT claims.
 	jwt.RegisteredClaims
 }
@@ -213,7 +214,8 @@ func postAuthSessionsJoin(c *gin.Context) {
 		Port int    `json:"port"`
 	}
 
-	if err := c.BindJSON(&data); err != nil {
+	if err := c.ShouldBindJSON(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -228,7 +230,7 @@ func postAuthSessionsJoin(c *gin.Context) {
 	// last 10 seconds, and we should verify his claims against ours.
 	claims := UserAuthSessionChallengeClaims{
 		UserID:   user.UserID,
-		ServerID: server.ServerID,
+		ServerID: server.ServerID.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(10 * time.Second)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -263,16 +265,20 @@ func getAuthSessionsVerify(c *gin.Context) {
 		Challenge string `json:"challenge"`
 	}
 
-	if err := c.BindJSON(&data); err != nil {
+	if err := c.ShouldBindJSON(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	claims := &CustomClaims{}
+	fmt.Println(data.Challenge)
+
+	claims := &UserAuthSessionChallengeClaims{}
 	challenge, err := jwt.ParseWithClaims(data.Challenge, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(config.Get().Secret), nil
 	})
 
 	if err != nil {
+		fmt.Println(err.Error())
 		NewError(err).Abort(c)
 		return
 	}
@@ -293,7 +299,7 @@ func getAuthSessionsVerify(c *gin.Context) {
 
 	// Make sure we don't allow a potential clash when a server may
 	// attempt to process a challenge for another server.
-	if server.ServerID != claims.ServerID {
+	if server.ServerID.String() != claims.ServerID {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "The provided challenge has claims that could not be validated.",
 		})

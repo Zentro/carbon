@@ -16,16 +16,18 @@
 package domain
 
 import (
-	"strconv"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Server struct {
-	ServerID       int          `gorm:"primaryKey;autoIncrement" json:"server_id,omitempty"`
-	ServerState    ServerStatus `gorm:"not null" json:"server_state,omitempty"`
+	ServerID       uuid.UUID    `gorm:"type:char(36);primaryKey;" json:"server_id,omitempty"` // TODO: there's a chance that MariaDB uses UUID()
+	ServerState    ServerStatus `gorm:"not null;default:'offline'" json:"server_state,omitempty"`
 	Name           string       `gorm:"size:255;not null" json:"name" binding:"required"`
 	Host           string       `gorm:"size:255;not null;uniqueIndex:idx_host_port" json:"host" binding:"required"`
 	Port           int          `gorm:"not null;uniqueIndex:idx_host_port" json:"port" binding:"required"`
 	Version        string       `gorm:"size:100;not null" json:"version" binding:"required"`
+	Terrain        string       `gorm:"not null;default:'any'" json:"terrain" binding:"required"` // TODO: normalize this, terrain + GUID
 	Description    string       `gorm:"type:text;not null" json:"description" binding:"required"`
 	IconUrl        string       `gorm:"size:255" json:"icon_url"`
 	OwnerID        int          `gorm:"not null" json:"owner_id"`
@@ -38,8 +40,17 @@ type Server struct {
 	LastSyncDate   uint         `json:"last_sync_date,omitempty"`
 }
 
+// BeforeCreate will run before each insert operation to make sure the UUID
+// will be not NIL. This can be removed if MariaDB supports the UUID() operation.
+func (s *Server) BeforeCreate(tx *gorm.DB) (err error) {
+	if s.ServerID == uuid.Nil {
+		s.ServerID = uuid.New()
+	}
+	return
+}
+
 func (r *Server) ID() string {
-	return strconv.Itoa(r.ServerID)
+	return r.ServerID.String()
 }
 
 type ServerStatus string

@@ -25,8 +25,8 @@ import (
 )
 
 type CustomClaims struct {
-	UserID   int `json:"uid"`
-	ServerID int `json:"sid"`
+	UserID   int    `json:"uid"`
+	ServerID string `json:"sid"`
 	jwt.RegisteredClaims
 }
 
@@ -207,7 +207,7 @@ func putSyncServer(c *gin.Context) {
 		})
 	}
 
-	if err := ExtractServerManager(c).UpdateLastSync(s.ServerID); err != nil {
+	if err := ExtractServerManager(c).UpdateLastSync(s.ServerID.String()); err != nil {
 		NewError(err).Abort(c)
 		return
 	}

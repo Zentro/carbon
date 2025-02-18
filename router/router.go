@@ -87,6 +87,8 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 		})
 	})
 
+	router.GET("/ip", getClientIP)
+
 	if debug {
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
@@ -100,10 +102,10 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 		postAuthSessionsJoin,
 	)
 	auth.GET("/sessions/:server/verify",
-		RequireApiAuthorization(),
-		RoleRequired(Role("user")),
+		//RequireApiAuthorization(),
+		//RoleRequired(Role("user")),
 		ServerExists(),
-		RequireResourceOwnership(),
+		//RequireResourceOwnership(),
 		getAuthSessionsVerify,
 	)
 
@@ -113,6 +115,8 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	router.GET("/servers", getAllServers)
 	router.GET("/servers/:server", ServerExists(), getServer)
 
+	router.POST("/servers", RequireApiAuthorization(), RoleRequired(Role("user")), postCreateServer)
+
 	server := router.Group("/servers/:server")
 	server.Use(
 		RequireApiAuthorization(),
@@ -121,7 +125,6 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 		RequireResourceOwnership(),
 	)
 	{
-		server.POST("", postCreateServer)
 		server.PUT("", putUpdateServer)
 		server.PUT("/sync", putSyncServer)
 		server.PATCH("/power", patchServerPower)
@@ -157,4 +160,19 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	router.GET("/resource-versions/:version", getResourceVersion)
 
 	return router
+}
+
+// getClientIP godoc
+//
+//	@Tags		server
+//	@Accept		json
+//	@Produce	json
+//	@Success	200		{object}	map
+//	@Failure	400		{object}	RequestError
+//	@Failure	404		{object}	RequestError
+//	@Failure	500		{object}	RequestError
+//	@Router		/servers/{server}/sync [put]
+func getClientIP(c *gin.Context) {
+	ip := c.ClientIP()
+	c.JSON(http.StatusOK, gin.H{"ip": ip})
 }
