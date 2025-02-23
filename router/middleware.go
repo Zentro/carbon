@@ -208,6 +208,14 @@ func ExtractServer(c *gin.Context) *domain.Server {
 	return v.(*domain.Server)
 }
 
+func ExtractApiKey(c *gin.Context) *domain.ApiKey {
+	v, ok := c.Get("apiKey")
+	if !ok {
+		panic("router/middleware: cannot extract api key: not present in request context")
+	}
+	return v.(*domain.ApiKey)
+}
+
 func ExtractApiKeyKey(c *gin.Context) *domain.ApiKey {
 	v, ok := c.Get("apiKeyKey")
 	if !ok {

@@ -35,7 +35,7 @@ func getUser(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }
 
-// getMe godoc
+// getUserMe godoc
 //
 //	@Tags		users
 //	@Accept		json
@@ -45,7 +45,7 @@ func getUser(c *gin.Context) {
 //	@Failure	404	{object}	RequestError
 //	@Failure	500	{object}	RequestError
 //	@Router		/users/me/ [get]
-func getMe(c *gin.Context) {
+func getUserMe(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"me": ExtractUser(c),
 	})

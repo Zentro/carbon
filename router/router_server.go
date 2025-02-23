@@ -81,13 +81,17 @@ func getServer(c *gin.Context) {
 //	@Failure	500		{object}	RequestError
 //	@Router		/servers [post]
 func postCreateServer(c *gin.Context) {
-	var s domain.Server
-	if err := c.BindJSON(&s); err != nil {
+	apiKey := ExtractApiKey(c)
+
+	var server domain.Server
+	if err := c.BindJSON(&server); err != nil {
 		return
 	}
 
+	server.ApiKeyID = &apiKey.ApiKeyID
+
 	manager := ExtractServerManager(c)
-	if err := manager.Create(&s); err != nil {
+	if err := manager.Create(&server); err != nil {
 		NewError(err).Abort(c)
 		return
 	}
@@ -258,5 +262,9 @@ func getAllServerClients(c *gin.Context) {
 //	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server}/clients/{client} [get]
 func getServerClient(c *gin.Context) {
+	c.Status(http.StatusNotImplemented)
+}
+
+func getServerMe(c *gin.Context) {
 	c.Status(http.StatusNotImplemented)
 }

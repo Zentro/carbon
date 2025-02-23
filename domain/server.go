@@ -38,6 +38,8 @@ type Server struct {
 	ServerDate     uint         `gorm:"autoCreateTime" json:"server_date,omitempty"`
 	LastUpdateDate uint         `gorm:"autoUpdateTime" json:"last_Update_date,omitempty"`
 	LastSyncDate   uint         `json:"last_sync_date,omitempty"`
+	ApiKeyID       *uint        `gorm:"unique"`
+	ApiKey         ApiKey       `gorm:"constraint:OnDelete:CASCADE;"`
 }
 
 // BeforeCreate will run before each insert operation to make sure the UUID

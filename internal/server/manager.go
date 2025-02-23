@@ -60,19 +60,14 @@ func (m *Manager) FindByID(id string) (*domain.Server, error) {
 	return &server, nil
 }
 
-func (m *Manager) Create(s *domain.Server) error {
-	if err := m.db.Create(&s).Error; err != nil {
+func (m *Manager) Create(server *domain.Server) error {
+	if err := m.db.Create(&server).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func (m *Manager) Update(s *domain.Server) error {
-	// uuid, err := uuid.Parse(s.ID)
-	// if err != nil {
-	// 	return err // Return error if the provided ID is not a valid UUID
-	// }
-
 	var server domain.Server
 	if err := m.db.First(&server, "server_id = ?", s.ID()).Error; err != nil {
 		return fmt.Errorf("server not found: %w", err)
