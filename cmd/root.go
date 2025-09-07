@@ -30,18 +30,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	log2 "log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"time"
 
-	"github.com/apex/log"
-	"github.com/apex/log/handlers/multi"
-	"github.com/apex/log/handlers/text"
+	"github.com/mitchellh/colorstring"
 	"github.com/spf13/cobra"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var rootCmd = &cobra.Command{
@@ -83,7 +82,7 @@ func init() {
 
 func rootCmdRun(cmd *cobra.Command, _ []string) {
 	printLogo()
-	log.Debug("running in debug mode")
+	slog.Debug("running in debug mode")
 
 	cfg := config.Get()
 	ctx := cmd.Context()
@@ -92,36 +91,36 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 
 	database, err := mysql.Initialize()
 	if err != nil {
-		log.WithField("error", err).Fatal("could not initialize database connection")
+		slog.Error("could not initialize database connection", "error", err)
 	}
 
 	rm, err := resource.NewManager(ctx, remoteClient)
 	if err != nil {
-		log.WithField("error", err).Fatal("could not initialize resource manager")
+		slog.Error("could not initialize resource manager", "error", err)
 	}
 	sm, err := server.NewManager(ctx, database)
 	if err != nil {
-		log.WithField("error", err).Fatal("could not initialize server manager")
+		slog.Error("could not initialize server manager", "error", err)
 	}
 
 	um, err := user.NewManager(ctx, remoteClient)
 	if err != nil {
-		log.WithField("error", err).Fatal("could not initialize the user manager")
+		slog.Error("could not initialize the user manager", "error", err)
 	}
 
 	tm, err := token.NewManager(ctx, database)
 	if err != nil {
-		log.WithField("error", err).Fatal("could not initialize the token manager")
+		slog.Error("could not initialize the token manager", "error", err)
 	}
 
 	km, err := api_key.NewManager(ctx, database)
 	if err != nil {
-		log.WithField("error", err).Fatal("could not initialze the api key manager")
+		slog.Error("could not initialze the api key manager", "error", err)
 	}
 
 	cm, err := client.NewManager(ctx, database)
 	if err != nil {
-		log.WithField("error", err).Fatal("could not initialze the client manager")
+		slog.Error("could not initialze the client manager", "error", err)
 	}
 
 	managers := router.ManagerGroup{
@@ -142,31 +141,31 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 			select {
 			case <-time.After(1 * time.Minute): // After every 10 minutes
 				if err := rm.AsyncRefreshCache(context.Background()); err != nil {
-					log.WithField("error", err).Warn("failed to refresh resource cache")
+					slog.Error("failed to refresh resource cache", "error", err)
 				}
 
 			case <-time.After(1 * time.Hour): // After every 60 minutes
 				if err := tm.AsyncPurgeDb(context.Background()); err != nil {
-					log.WithField("error", err).Warn("failed to purge token database")
+					slog.Error("failed to purge token database", "error", err)
 				}
 
 			case <-asyncCacheRefreshSignal:
-				log.Info("got cache refresh signal")
+				slog.Info("got cache refresh signal")
 				rm.AsyncRefreshCache(context.Background())
 
 			case <-asyncTokenPurgeSignal:
-				log.Info("got token purge signal")
+				slog.Info("got token purge signal")
 				tm.AsyncPurgeDb(context.Background())
 			}
 		}
 	}()
 
-	log.WithFields(log.Fields{
-		"use_ssl":      config.Get().Api.Ssl.Enabled,
-		"use_auto_tls": useAutoTls,
-		"host_address": config.Get().Api.Host,
-		"host_port":    config.Get().Api.Port,
-	}).Info("starting webserver")
+	slog.Info("starting webserver",
+		"use_ssl", config.Get().Api.Ssl.Enabled,
+		"use_auto_tls", useAutoTls,
+		"host_address", config.Get().Api.Host,
+		"host_port", config.Get().Api.Port,
+	)
 
 	// Create a new HTTP server instance.
 	s := &http.Server{
@@ -178,15 +177,17 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 	}
 
 	if useAutoTls {
-		log.WithField("hostname", tlsHostname).
-			Info("webserver will start with auto-TLS")
+		slog.Info("webserver will start with auto-TLS",
+			"hostname", tlsHostname,
+		)
 		// but it doesn't! not yet at least...
 	}
 
 	if config.Get().Api.Ssl.Enabled {
 		go func() {
 			if err := s.ListenAndServeTLS(config.Get().Api.Ssl.CertificateFile, config.Get().Api.Ssl.KeyFile); err != nil {
-				log.WithField("error", err).Fatal("failed to configure TLS webserver")
+				slog.Error("failed to configure TLS webserver", "error", err)
+				os.Exit(1)
 			}
 		}()
 		return
@@ -194,11 +195,12 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 
 	go func() {
 		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.WithField("error", err).Fatal("failed to configure webserver")
+			slog.Error("failed to configure webserver", "error", err)
+			os.Exit(1)
 		}
 	}()
 
-	log.Info("web server started")
+	slog.Info("web server started")
 
 	q := make(chan os.Signal, 1)
 	// Wait and accept graceful shutdowns when quit via SIGINT (Ctrl+C or DEL)
@@ -208,7 +210,7 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 	// Block until a signal is received.
 	<-q
 
-	log.Warn("shutting down...")
+	slog.Warn("shutting down...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
@@ -227,7 +229,7 @@ func initConfig() {
 	err := config.FromFile(configPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			exitWithConfigurationError()
+			log2.Fatal("cmd/root: configuration file not found: ", err)
 		}
 		log2.Fatal("cmd/root: failed to create the configuration file: ", err)
 	}
@@ -235,39 +237,51 @@ func initConfig() {
 
 func initLogging() {
 	d := config.Get().LogDirectory
-	// We will always default to the info log level unless we specify in the config,
-	// or it's manually set with the --debug flag
-	log.SetLevel(log.InfoLevel)
+	path := filepath.Join(d, "carbon.log")
+
+	// Open the log file and append to it in append mode.
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log2.Fatal("cmd/root: failed to open log file: ", err)
+	}
+
+	// Log to both stderr and file.
+	mw := io.MultiWriter(os.Stderr, file)
+
+	// We will always default to the info log level unless we
+	// specify in the config, or it's manually set with the --debug flag
+	level := slog.LevelInfo
 	if debug || config.Get().Debug {
-		log.SetLevel(log.DebugLevel)
+		level = slog.LevelDebug
 	}
 
-	p := filepath.Join(d, "carbon.log")
-	w := &lumberjack.Logger{
-		Filename:   p,
-		MaxSize:    10,   // megabytes
-		MaxBackups: 5,    // number of backups
-		MaxAge:     30,   // days
-		Compress:   true, // compress old log files
-	}
+	// We no longer use lumberjack for log rotation and instead depend
+	// on a logrotate file provided by the user
 
-	log.SetHandler(multi.New(
-		text.New(os.Stderr),
-		text.New(w),
-	))
-}
+	handler := slog.NewTextHandler(mw, &slog.HandlerOptions{Level: level})
+	logger := slog.New(handler)
 
-func exitWithConfigurationError() {
-	fmt.Println(`Please provide a configuration file using the --config flag.`)
-	os.Exit(1)
+	slog.SetDefault(logger)
 }
 
 func printLogo() {
-	fmt.Printf(`Rigs of Rods Web API [Version %s]`, system.Version)
-	fmt.Println()
-	fmt.Println(`Copyright 2022-2025 Rafael Galvan. All rights reserved.`)
-	fmt.Println()
-	fmt.Println(`Use of this source code is governed by the GPLv3 license.`)
-	fmt.Println(`The license can be found in the LICENSE file.`)
-	fmt.Println()
+	fmt.Printf(colorstring.Color(`[blue]
+                   __              
+  _________ ______/ /_  ____  ____ 
+ / ___/ __ \/ ___/ __ \/ __ \/ __ \
+/ /__/ /_/ / /  / /_/ / /_/ / / / /
+\___/\__,_/_/  /_.___/\____/_/ /_/   [reset]
+
+Copyright (c) 2022, 2025 Rafael Galvan and contributors.
+
+Rigs of Rods Web API (carbon) [Version %s]
+
+[bold]Use of this source code is governed by the GPLv3 license.
+The license can be found in the LICENSE file.
+[reset]
+
+Learn more at https://www.rigsofrods.org
+
+
+`), system.Version)
 }

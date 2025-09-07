@@ -5,8 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-
-	"github.com/apex/log"
+	"log/slog"
 )
 
 func (c *client) GetUser(ctx context.Context, uid int) (domain.User, error) {
@@ -20,7 +19,7 @@ func (c *client) GetUser(ctx context.Context, uid int) (domain.User, error) {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.WithField("error", err).Error("")
+			slog.Error("Failed to close response body", "error", err)
 		}
 	}(res.Body)
 	if err := res.BindJSON(&r); err != nil {

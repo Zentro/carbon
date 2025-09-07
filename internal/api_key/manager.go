@@ -5,8 +5,8 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"log/slog"
 
-	"github.com/apex/log"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +21,7 @@ func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 }
 
 func (m *Manager) init() error {
-	log.Info("initializing api key schema into the database...")
+	slog.Info("initializing api key schema into the database...")
 
 	if err := m.db.AutoMigrate(&domain.ApiKey{}); err != nil {
 		return err

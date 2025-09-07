@@ -23,12 +23,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
 
 	"emperror.dev/errors"
-	"github.com/apex/log"
 	"github.com/cenkalti/backoff/v4"
 	jsoniter "github.com/json-iterator/go"
 )
@@ -242,9 +242,9 @@ func logHttpRequests(req *http.Request) {
 		headers[k] = []string{"(redacted)"}
 	}
 
-	log.WithFields(log.Fields{
-		"method":   req.Method,
-		"endpoint": req.URL.String(),
-		"headers":  headers,
-	}).Debug("request to external HTTP endpoint")
+	slog.Debug("request to external HTTP endpoint",
+		"method", req.Method,
+		"endpoint", req.URL.String(),
+		"headers", headers,
+	)
 }

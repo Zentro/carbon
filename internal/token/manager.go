@@ -18,9 +18,9 @@ package token
 import (
 	"carbon/domain"
 	"context"
+	"log/slog"
 	"time"
 
-	"github.com/apex/log"
 	"gorm.io/gorm"
 )
 
@@ -35,7 +35,7 @@ func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 }
 
 func (m *Manager) init() error {
-	log.Info("initializing token schema into the database...")
+	slog.Info("initializing token schema into the database...")
 
 	if err := m.db.AutoMigrate(&domain.Token{}); err != nil {
 		return err
@@ -45,7 +45,7 @@ func (m *Manager) init() error {
 }
 
 func (m *Manager) AsyncPurgeDb(ctx context.Context) error {
-	log.Info("purging invalid tokens from the database...")
+	slog.Info("purging invalid tokens from the database...")
 
 	now := time.Now()
 

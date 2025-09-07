@@ -20,9 +20,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -48,7 +48,7 @@ func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 }
 
 func (m *Manager) init() error {
-	log.Info("initializing server schema into the database...")
+	slog.Info("initializing server schema into the database...")
 
 	if err := m.db.AutoMigrate(&domain.Server{}); err != nil {
 		return err

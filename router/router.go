@@ -26,11 +26,11 @@ import (
 	"carbon/internal/user"
 	"carbon/remote"
 	"carbon/system"
+	"log/slog"
 	"net/http"
 
 	_ "carbon/docs" // This imports the docs package created by Swag CLI
 
-	"github.com/apex/log"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -70,12 +70,16 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 		AttachApiKeyManager(managers.ApiKeyManager))
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(gin.LoggerWithFormatter(func(params gin.LogFormatterParams) string {
-		log.WithFields(log.Fields{
-			"client_ip":   params.ClientIP,
-			"user_agent":  params.Request.UserAgent(),
-			"latency":     params.Latency,
-			"status_code": params.StatusCode}).Infof("%s %s", params.MethodColor()+params.Method+params.ResetColor(), params.Path)
+		slog.Info("incoming request",
+			"client_ip", params.ClientIP,
+			"user_agent", params.Request.UserAgent(),
+			"latency", params.Latency,
+			"status_code", params.StatusCode,
+			"method", params.Method,
+			"path", params.Path,
+		)
 
+		// Return empty string because Gin expects a string return
 		return ""
 	}))
 

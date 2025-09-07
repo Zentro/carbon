@@ -20,10 +20,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"strconv"
 	"sync"
-
-	"github.com/apex/log"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -68,7 +67,7 @@ func (c *client) GetResource(ctx context.Context, rid string) (domain.Resource, 
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.WithField("error", err).Error("")
+			slog.Error("Failed to close response body", "error", err)
 		}
 	}(res.Body)
 	if err := res.BindJSON(&r); err != nil {
@@ -90,7 +89,7 @@ func (c *client) GetResourceCategories(ctx context.Context) ([]domain.ResourceCa
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.WithField("error", err).Error("")
+			slog.Error("Failed to close response body", "error", err)
 		}
 	}(res.Body)
 	if err := res.BindJSON(&r); err != nil {
@@ -138,7 +137,7 @@ func (c *client) GetResourceVersions(ctx context.Context, rid string) ([]domain.
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.WithField("error", err).Error("")
+			slog.Error("Failed to close response body", "error", err)
 		}
 	}(res.Body)
 	if err := res.BindJSON(&r); err != nil {
@@ -158,7 +157,7 @@ func (c *client) GetResourceVersion(ctx context.Context, vid string) (domain.Res
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.WithField("error", err).Error("")
+			slog.Error("Failed to close response body", "error", err)
 		}
 	}(res.Body)
 	if err := res.BindJSON(&r); err != nil {
@@ -184,7 +183,7 @@ func (c *client) getResourceReviewsPaged(ctx context.Context, page int, rid stri
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.WithField("error", err).Error("")
+			slog.Error("Failed to close response body", "error", err)
 		}
 	}(res.Body)
 	if err := res.BindJSON(&r); err != nil {
@@ -206,7 +205,7 @@ func (c *client) getResourcesPaged(ctx context.Context, page int) ([]domain.Reso
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.WithField("error", err).Error("")
+			slog.Error("Failed to close response body", "error", err)
 		}
 	}(res.Body)
 	if err := res.BindJSON(&r); err != nil {

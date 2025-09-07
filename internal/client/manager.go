@@ -18,8 +18,8 @@ package client
 import (
 	"carbon/domain"
 	"context"
+	"log/slog"
 
-	"github.com/apex/log"
 	"gorm.io/gorm"
 )
 
@@ -34,7 +34,7 @@ func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 }
 
 func (m *Manager) init() error {
-	log.Info("initializing client schema into the database...")
+	slog.Info("initializing client schema into the database...")
 
 	if err := m.db.AutoMigrate(&domain.Client{}); err != nil {
 		return err

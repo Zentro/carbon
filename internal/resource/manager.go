@@ -19,9 +19,8 @@ import (
 	"carbon/domain"
 	"carbon/remote"
 	"context"
+	"log/slog"
 	"sync"
-
-	"github.com/apex/log"
 )
 
 type Manager struct {
@@ -48,7 +47,7 @@ func NewManager(ctx context.Context, client remote.Client) (*Manager, error) {
 }
 
 func (m *Manager) init(ctx context.Context) error {
-	log.Info("fetching resources from remote API...")
+	slog.Info("fetching resources from remote API...")
 	resources, err := m.client.GetResources(ctx)
 	if err != nil {
 		return err
@@ -63,7 +62,7 @@ func (m *Manager) init(ctx context.Context) error {
 }
 
 func (m *Manager) AsyncRefreshCache(ctx context.Context) error {
-	log.Info("refreshing resources cache from remote API...")
+	slog.Info("refreshing resources cache from remote API...")
 	resources, err := m.client.GetResources(ctx)
 	// This will prevent the cache from being overwritten in case of
 	// any HTTP errors.
