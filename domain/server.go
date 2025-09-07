@@ -30,7 +30,6 @@ type Server struct {
 	Terrain        string       `gorm:"not null;default:'any'" json:"terrain" binding:"required"` // TODO: normalize this, terrain + GUID
 	Description    string       `gorm:"type:text;not null" json:"description" binding:"required"`
 	IconUrl        string       `gorm:"size:255" json:"icon_url"`
-	OwnerID        int          `gorm:"not null" json:"owner_id"`
 	HasPassword    *bool        `gorm:"not null" json:"has_password" binding:"required"`
 	MaxClients     uint         `gorm:"not null" json:"max_clients" binding:"required"`
 	Clients        []Client     `gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE" json:"clients,omitempty"`
@@ -51,8 +50,8 @@ func (s *Server) BeforeCreate(tx *gorm.DB) (err error) {
 	return
 }
 
-func (r *Server) ID() string {
-	return r.ServerID.String()
+func (s *Server) ID() string {
+	return s.ServerID.String()
 }
 
 type ServerStatus string

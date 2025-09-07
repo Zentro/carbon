@@ -85,38 +85,41 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 	printLogo()
 	log.Debug("running in debug mode")
 
-	remoteClient := remote.NewClient(config.Get().Remote.Location, config.Get().Remote.Key)
+	cfg := config.Get()
+	ctx := cmd.Context()
+
+	remoteClient := remote.NewClient(cfg.Remote.Location, cfg.Remote.Key)
 
 	database, err := mysql.Initialize()
 	if err != nil {
 		log.WithField("error", err).Fatal("could not initialize database connection")
 	}
 
-	rm, err := resource.NewManager(cmd.Context(), remoteClient)
+	rm, err := resource.NewManager(ctx, remoteClient)
 	if err != nil {
 		log.WithField("error", err).Fatal("could not initialize resource manager")
 	}
-	sm, err := server.NewManager(cmd.Context(), database)
+	sm, err := server.NewManager(ctx, database)
 	if err != nil {
 		log.WithField("error", err).Fatal("could not initialize server manager")
 	}
 
-	um, err := user.NewManager(cmd.Context(), remoteClient)
+	um, err := user.NewManager(ctx, remoteClient)
 	if err != nil {
 		log.WithField("error", err).Fatal("could not initialize the user manager")
 	}
 
-	tm, err := token.NewManager(cmd.Context(), database)
+	tm, err := token.NewManager(ctx, database)
 	if err != nil {
 		log.WithField("error", err).Fatal("could not initialize the token manager")
 	}
 
-	km, err := api_key.NewManager(cmd.Context(), database)
+	km, err := api_key.NewManager(ctx, database)
 	if err != nil {
 		log.WithField("error", err).Fatal("could not initialze the api key manager")
 	}
 
-	cm, err := client.NewManager(cmd.Context(), database)
+	cm, err := client.NewManager(ctx, database)
 	if err != nil {
 		log.WithField("error", err).Fatal("could not initialze the client manager")
 	}
@@ -190,12 +193,12 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 	}
 
 	go func() {
-		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.WithField("error", err).Fatal("failed to configure webserver")
 		}
 	}()
 
-	log.Info("webserver started")
+	log.Info("web server started")
 
 	q := make(chan os.Signal, 1)
 	// Wait and accept graceful shutdowns when quit via SIGINT (Ctrl+C or DEL)

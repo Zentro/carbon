@@ -22,8 +22,16 @@ var (
 	ErrTimeout      = errors.New("connection timeout")
 )
 
-// Connect imitates legacy "MasterServer" behavior, by connecting directly to the server
-// and "knocking" to verify it's a real server. This is a blocking operation.
+// Connect establishes a connection to a server at the specified IP and port.
+// It sends a "poke" message to the server and waits for a response.
+//
+// Parameters:
+//   - ip: The IP address of the server to connect to.
+//   - port: The port number of the server to connect to.
+//   - version: The version of the protocol to use for the connection.
+// Returns:
+//   - A pointer to a ServerConnectResponse containing the response from the server.
+//   - An error if the connection fails or if the response is invalid.
 func Connect(ip string, port int, version string) (*ServerConnectResponse, error) {
 	addr := fmt.Sprintf("%s:%d", ip, port)
 	conn, err := net.DialTimeout("tcp", addr, 10*time.Second)

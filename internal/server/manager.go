@@ -31,6 +31,16 @@ type Manager struct {
 	db *gorm.DB
 }
 
+// NewManager creates a new instance of Manager with the provided context and database connection.
+// It initializes the Manager by calling its init method.
+//
+// Parameters:
+//   - ctx: The context to be used for the Manager.
+//   - db: A pointer to a gorm.DB instance representing the database connection.
+//
+// Returns:
+//   - A pointer to the newly created Manager instance.
+//   - An error if the initialization fails.
 func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 	m := &Manager{db: db}
 	err := m.init()
@@ -60,6 +70,15 @@ func (m *Manager) FindByID(id string) (*domain.Server, error) {
 	return &server, nil
 }
 
+// Create adds a new server record to the database.
+// It takes a pointer to a domain.Server object as input and returns an error if the operation fails.
+// If the server is successfully created, it returns nil.
+//
+// Parameters:
+//   - server: A pointer to the domain.Server object to be created.
+//
+// Returns:
+//   - error: An error if the database operation fails, otherwise nil.
 func (m *Manager) Create(server *domain.Server) error {
 	if err := m.db.Create(&server).Error; err != nil {
 		return err

@@ -30,6 +30,17 @@ type Manager struct {
 	client    remote.Client
 }
 
+// NewManager creates a new instance of Manager, initializes it using the provided
+// context, and returns it. The function takes a context and a remote.Client as
+// parameters. If initialization fails, it returns an error.
+//
+// Parameters:
+//   - ctx: The context to control cancellation and deadlines.
+//   - client: The remote.Client used for communication with external resources.
+//
+// Returns:
+//   - *Manager: A pointer to the newly created Manager instance.
+//   - error: An error if initialization fails, otherwise nil.
 func NewManager(ctx context.Context, client remote.Client) (*Manager, error) {
 	m := &Manager{client: client}
 	err := m.init(ctx)
@@ -71,8 +82,12 @@ func (m *Manager) AsyncRefreshCache(ctx context.Context) error {
 	return nil
 }
 
-// Put can replace everything in the collection, even if nothing is
-// in the collection.
+// Put replaces the current list of resources managed by the Manager with the provided slice of resources.
+// It ensures thread-safety by acquiring a lock before updating the resources and releasing it afterward.
+//
+// Parameters:
+//
+//	r - A slice of pointers to domain.Resource that will replace the current resources.
 func (m *Manager) Put(r []*domain.Resource) {
 	m.mu.Lock()
 	m.resources = r

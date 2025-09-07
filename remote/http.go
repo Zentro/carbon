@@ -42,8 +42,6 @@ type Client interface {
 	GetResourceVersions(ctx context.Context, rid string) ([]domain.ResourceVersion, error)
 	GetResourceVersion(ctx context.Context, vid string) (domain.ResourceVersion, error)
 	GetUser(ctx context.Context, uid int) (domain.User, error)
-	GetServers(ctx context.Context) ([]domain.Server, error)
-	CreateServer(ctx context.Context, server domain.Server) (domain.Server, error)
 	ValidateUserAuthCredentials(ctx context.Context, data interface{}) (RawUserAuthResponse, error)
 }
 
