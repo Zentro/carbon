@@ -18,10 +18,10 @@ package cmd
 import (
 	"carbon/config"
 	"carbon/internal/api_key"
+	"carbon/internal/api_login_key"
 	"carbon/internal/client"
 	"carbon/internal/resource"
 	"carbon/internal/server"
-	"carbon/internal/token"
 	"carbon/internal/user"
 	"carbon/mysql"
 	"carbon/remote"
@@ -108,7 +108,7 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 		slog.Error("could not initialize the user manager", "error", err)
 	}
 
-	tm, err := token.NewManager(ctx, database)
+	tm, err := api_login_key.NewManager(ctx, database)
 	if err != nil {
 		slog.Error("could not initialize the token manager", "error", err)
 	}
@@ -124,12 +124,12 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 	}
 
 	managers := router.ManagerGroup{
-		ResourceManager: rm,
-		ServerManager:   sm,
-		UserManager:     um,
-		TokenManager:    tm,
-		ApiKeyManager:   km,
-		ClientManager:   cm,
+		ResourceManager:    rm,
+		ServerManager:      sm,
+		UserManager:        um,
+		ApiLoginKeyManager: tm,
+		ApiKeyManager:      km,
+		ClientManager:      cm,
 	}
 
 	r := router.NewClient(remoteClient, managers)

@@ -18,6 +18,7 @@ package router
 import (
 	"carbon/domain"
 	"carbon/internal/api_key"
+	"carbon/internal/api_login_key"
 	"carbon/internal/resource"
 	"carbon/internal/server"
 	"carbon/internal/token"
@@ -81,7 +82,7 @@ func AttachServerManager(m *server.Manager) gin.HandlerFunc {
 	}
 }
 
-func AttachTokenManager(m *token.Manager) gin.HandlerFunc {
+func AttachTokenManager(m *api_login_key.Manager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("token_manager", m)
 		c.Next()

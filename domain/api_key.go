@@ -15,16 +15,28 @@
 
 package domain
 
+import "time"
+
 // ApiKey represents a high level definition of an API key.
 type ApiKey struct {
-	// ID is the primary key of the API key
+	// ApiKeyID is the primary key of the API key
 	ApiKeyID uint `gorm:"primaryKey" json:"api_key_id,omitempty"`
-	// USerID references the user who the API key belongs to
+	// UserID references the user who the API key belongs to
 	UserID uint `gorm:"not null" json:"api_key_user_id" binding:"required"`
 	// Key is the actual API key string
 	Key string `gorm:"not null" json:"api_key_key,omitempty"`
 	// Role specifies the role associated with the API key
 	Role ApiKeyRole `gorm:"not null" json:"api_key_role,omitempty" binding:"required"`
+	// Enabled specifies whether the key is enabled or disabled.
+	Enabled bool `gorm:"not null" json:"enabled"`
+	// LastUsedAt specifies the last time this key was used.
+	LastUsedAt time.Time `json:"last_used_at"`
+	// CreatedAt specifies the time of creation for this key.
+	// Automatically managed by GORM.
+	CreatedAt time.Time
+	// UpdatedAt specifies the time of update for this key.
+	// Automatically managed by GORM.
+	UpdatedAt time.Time
 }
 
 const (

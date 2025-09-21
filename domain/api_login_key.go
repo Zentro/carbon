@@ -23,15 +23,31 @@ import (
 	"gorm.io/gorm"
 )
 
-type Token struct {
-	ID                    uint      `gorm:"primaryKey" json:"token_id"`
-	UserID                int       `gorm:"not null" json:"user_id"`
-	LoginToken            string    `gorm:"size:255;not null;unique" json:"login_token"`
-	LoginTokenExpiresAt   time.Time `gorm:"not null" json:"login_token_expires_at"`
-	RefreshToken          string    `gorm:"size:255;not null;unique" json:"refresh_token"`
-	RefreshTokenExpiresAt time.Time `gorm:"not null" json:"refresh_token_expires_at"`
-	IPAddress             string    `gorm:"not null" json:"ip_address"`
-
+// ApiLoginKey represens a high level definition of an API login key.
+// The API login key is seperate distinct from the API key. It has no roles or scopes,
+// and is purely used for the sake of users logging in and retrieving their profile.
+// It should never be used to make changes to a user's profile as the lack of scope
+// restrictions could let a user arbitrarily change their roles using the API's XenForo
+// super key.
+type ApiLoginKey struct {
+	// ApiLoginkeyID is the primary key of the API login key.
+	ApiLoginID uint `gorm:"primaryKey" json:"api_login_key_id"`
+	// UserID references the user who the API login key belongs to.
+	UserID int `gorm:"not null" json:"user_id"`
+	// LoginKey is the actual key string
+	LoginKey string `gorm:"size:255;not null;unique" json:"api_login_key"`
+	// LoginkeyExpiresAt is the time at which the API login key is no longer valid.
+	LoginKeyExpiresAt time.Time `gorm:"not null" json:"api_login_key_expires_at"`
+	// RefreshKey is the key string for refreshing the key itself.
+	RefreshKey string `gorm:"size:255;not null;unique" json:"api_refresh_key"`
+	// RefreshKeyExpresAt is the time at which the refresh key is no longer valid, and the login
+	// key itself can no longer be refreshed.
+	RefreshKeyExpiresAt time.Time `gorm:"not null" json:"api_refresh_key_expires_at"`
+	// IP is the source of the request, if this does not match then this key should no longer be
+	// considered valid.
+	IP string `gorm:"not null" json:"ip_address"`
+	// gorm.Model will include the GORM managed CreatedAt, UpdatedAt, and DeletedAt
+	// fields.
 	gorm.Model
 }
 
