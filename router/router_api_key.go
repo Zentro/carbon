@@ -19,6 +19,7 @@ import (
 	"carbon/domain"
 	"carbon/internal/api_key"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -58,6 +59,32 @@ func getAllApiKeys(c *gin.Context) {
 func getApiKey(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"api_key": ExtractApiKeyKey(c),
+	})
+}
+
+// getApiKey godoc
+//
+//	@Tags		api_key
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	[]domain.ApiKey
+//	@Failure	400	{object}	RequestError
+//	@Failure	404	{object}	RequestError
+//	@Failure	500	{object}	RequestError
+//	@Router		/api-keys/{user} [get]
+func getUserApiKeys(c *gin.Context) {
+	user := c.Param("user")
+	// TODO: Validate user is an integer
+	u, _ := strconv.Atoi(user)
+	manager := ExtractApiKeyManager(c)
+	api_keys, err := manager.FindByUser(u)
+	if err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"api_keys": api_keys,
 	})
 }
 

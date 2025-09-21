@@ -38,6 +38,14 @@ func (m *Manager) FindByKey(key string) (*domain.ApiKey, error) {
 	return &apiKey, nil
 }
 
+func (m *Manager) FindByUser(user int) ([]*domain.ApiKey, error) {
+	var apiKeys []*domain.ApiKey
+	if err := m.db.Where("user_id = ?", user).Find(&apiKeys).Error; err != nil {
+		return nil, err
+	}
+	return apiKeys, nil
+}
+
 func (m *Manager) Create(apiKey *domain.ApiKey) error {
 	if err := m.db.Create(&apiKey).Error; err != nil {
 		return err

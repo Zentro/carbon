@@ -85,7 +85,7 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 
 	router.Use(AttachCorsHeaders())
 	router.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "The requested endpoint could not be found."})
+		c.JSON(http.StatusNotFound, gin.H{"error": "The requested route could not be found."})
 	})
 
 	router.GET("/", func(c *gin.Context) {
@@ -154,6 +154,7 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	{
 		api_key.POST("", postCreateApiKey)
 		api_key.GET("/:api_key", getApiKey, ApiKeyKeyExists())
+		api_key.GET("/users/:user", getUserApiKeys) // TODO: move this to users
 		api_key.GET("", getAllApiKeys)
 		api_key.DELETE("/:api_key", deleteApiKey, ApiKeyKeyExists())
 	}

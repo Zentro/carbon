@@ -10,7 +10,7 @@ Rigs of Rods API (carbon) is the open source web API designed to interface with 
 
 ## Installation
 
-**NOTE: This is meant to be done on a Linux machine, there are no instructions for Windows.**
+**NOTE: Linux is the the only supported operating system by carbon, no instructions will be provided for Windows.**
 
 ### Quick setup
 
