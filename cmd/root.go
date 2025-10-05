@@ -92,6 +92,7 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 	database, err := mysql.Initialize()
 	if err != nil {
 		slog.Error("could not initialize database connection", "error", err)
+		os.Exit(1)
 	}
 
 	rm, err := resource.NewManager(ctx, remoteClient)
@@ -133,32 +134,6 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 	}
 
 	r := router.NewClient(remoteClient, managers)
-
-	asyncCacheRefreshSignal := make(chan struct{})
-	asyncTokenPurgeSignal := make(chan struct{})
-	go func() {
-		for {
-			select {
-			case <-time.After(1 * time.Minute): // After every 10 minutes
-				if err := rm.AsyncRefreshCache(context.Background()); err != nil {
-					slog.Error("failed to refresh resource cache", "error", err)
-				}
-
-			case <-time.After(1 * time.Hour): // After every 60 minutes
-				if err := tm.AsyncPurgeDb(context.Background()); err != nil {
-					slog.Error("failed to purge token database", "error", err)
-				}
-
-			case <-asyncCacheRefreshSignal:
-				slog.Info("got cache refresh signal")
-				rm.AsyncRefreshCache(context.Background())
-
-			case <-asyncTokenPurgeSignal:
-				slog.Info("got token purge signal")
-				tm.AsyncPurgeDb(context.Background())
-			}
-		}
-	}()
 
 	slog.Info("starting webserver",
 		"use_ssl", config.Get().Api.Ssl.Enabled,

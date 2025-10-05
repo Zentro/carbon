@@ -21,6 +21,7 @@ import (
 	"context"
 	"log/slog"
 	"sync"
+	"time"
 )
 
 type Manager struct {
@@ -29,21 +30,39 @@ type Manager struct {
 	client    remote.Client
 }
 
-// NewManager creates a new instance of Manager, initializes it using the provided
-// context, and returns it. The function takes a context and a remote.Client as
-// parameters. If initialization fails, it returns an error.
-//
-// Parameters:
-//   - ctx: The context to control cancellation and deadlines.
-//   - client: The remote.Client used for communication with external resources.
-//
-// Returns:
-//   - *Manager: A pointer to the newly created Manager instance.
-//   - error: An error if initialization fails, otherwise nil.
+// NewManager creates a new instance of Manager and initializes it by fetching resources from the remote API.
 func NewManager(ctx context.Context, client remote.Client) (*Manager, error) {
 	m := &Manager{client: client}
-	err := m.init(ctx)
-	return m, err
+
+	if err := m.init(ctx); err != nil {
+		return nil, err
+	}
+
+	// Start the resource manager in a separate goroutine
+	// to handle periodically refreshing the resource cache.
+	m.Start(ctx)
+
+	return m, nil
+}
+
+func (m *Manager) Start(ctx context.Context) {
+	slog.Info("starting resource manager...")
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				slog.Info("stopping resource manager...")
+				return
+			case <-time.After(5 * time.Minute):
+				if err := m.purgeAndRefresh(ctx); err != nil {
+					// Not fatal, just log the error and try again later.
+					slog.Error("could not refresh resources cache", "error", err)
+				} else {
+					slog.Debug("resources cache successfully refreshed")
+				}
+			}
+		}
+	}()
 }
 
 func (m *Manager) init(ctx context.Context) error {
@@ -54,15 +73,15 @@ func (m *Manager) init(ctx context.Context) error {
 	}
 
 	for _, data := range resources {
-		data := data
 		m.Add(&data)
 	}
 
 	return nil
 }
 
-func (m *Manager) AsyncRefreshCache(ctx context.Context) error {
-	slog.Info("refreshing resources cache from remote API...")
+// purgeAndRefresh fetches the latest resources from the remote API and updates the internal cache.
+func (m *Manager) purgeAndRefresh(ctx context.Context) error {
+	slog.Debug("refreshing resources cache...")
 	resources, err := m.client.GetResources(ctx)
 	// This will prevent the cache from being overwritten in case of
 	// any HTTP errors.
@@ -70,35 +89,32 @@ func (m *Manager) AsyncRefreshCache(ctx context.Context) error {
 		return err
 	}
 
-	var newCache []*domain.Resource
+	var r []*domain.Resource
 	for _, data := range resources {
 		data := data
-		newCache = append(newCache, &data)
+		r = append(r, &data)
 	}
 
-	m.Put(newCache)
+	m.Put(r)
 
 	return nil
 }
 
-// Put replaces the current list of resources managed by the Manager with the provided slice of resources.
-// It ensures thread-safety by acquiring a lock before updating the resources and releasing it afterward.
-//
-// Parameters:
-//
-//	r - A slice of pointers to domain.Resource that will replace the current resources.
+// Put replaces the entire resources cache with the provided slice of resources.
 func (m *Manager) Put(r []*domain.Resource) {
 	m.mu.Lock()
 	m.resources = r
 	m.mu.Unlock()
 }
 
+// Add appends a new resource to the resources cache.
 func (m *Manager) Add(r *domain.Resource) {
 	m.mu.Lock()
 	m.resources = append(m.resources, r)
 	m.mu.Unlock()
 }
 
+// Find searches for a resource that matches the provided filter function.
 func (m *Manager) Find(filter func(match *domain.Resource) bool) *domain.Resource {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -110,6 +126,7 @@ func (m *Manager) Find(filter func(match *domain.Resource) bool) *domain.Resourc
 	return nil
 }
 
+// Collection returns a copy of the entire resources cache.
 func (m *Manager) Collection() []*domain.Resource {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

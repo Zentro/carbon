@@ -1,4 +1,4 @@
-// Copyright (C) 2022 Rafael Galvan
+// Copyright (C) 2022, 2025 Rafael Galvan
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,29 +16,68 @@
 package domain
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+// Server presents a high level definition of a game server.
+// It contains all the information needed to connect to and manage the server.
 type Server struct {
-	ServerID       uuid.UUID    `gorm:"type:char(36);primaryKey;" json:"server_id,omitempty"` // TODO: there's a chance that MariaDB uses UUID()
-	ServerState    ServerStatus `gorm:"not null;default:'offline'" json:"server_state,omitempty"`
-	Name           string       `gorm:"size:255;not null" json:"name" binding:"required"`
-	Host           string       `gorm:"size:255;not null;uniqueIndex:idx_host_port" json:"host" binding:"required"`
-	Port           int          `gorm:"not null;uniqueIndex:idx_host_port" json:"port" binding:"required"`
-	Version        string       `gorm:"size:100;not null" json:"version" binding:"required"`
-	Terrain        string       `gorm:"not null;default:'any'" json:"terrain" binding:"required"` // TODO: normalize this, terrain + GUID
-	Description    string       `gorm:"type:text;not null" json:"description" binding:"required"`
-	IconUrl        string       `gorm:"size:255" json:"icon_url"`
-	HasPassword    *bool        `gorm:"not null" json:"has_password" binding:"required"`
-	MaxClients     uint         `gorm:"not null" json:"max_clients" binding:"required"`
-	Clients        []Client     `gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE" json:"clients,omitempty"`
-	IsVisible      *bool        `gorm:"not null" json:"is_visible" binding:"required"`
-	ServerDate     uint         `gorm:"autoCreateTime" json:"server_date,omitempty"`
-	LastUpdateDate uint         `gorm:"autoUpdateTime" json:"last_Update_date,omitempty"`
-	LastSyncDate   uint         `json:"last_sync_date,omitempty"`
-	ApiKeyID       *uint        `gorm:"unique"`
-	ApiKey         ApiKey       `gorm:"constraint:OnDelete:CASCADE;"`
+	// ServerID is the primary key of the server.
+	ServerID uuid.UUID `gorm:"type:uuid;primaryKey;" json:"server_id,omitempty"`
+
+	// ServerState represents the current state of the server.
+	ServerState ServerStatus `gorm:"not null;default:'offline'" json:"server_state,omitempty"`
+
+	// Name is the name of the server.
+	Name string `gorm:"size:255;not null" json:"name" binding:"required"`
+
+	// Host is the server's hostname or IP address.
+	Host string `gorm:"size:255;not null;uniqueIndex:idx_host_port" json:"host" binding:"required"`
+
+	// Port is the server's port number.
+	Port int `gorm:"not null;uniqueIndex:idx_host_port" json:"port" binding:"required"`
+
+	// Version is the version of RoRnet the server is running.
+	Version string `gorm:"size:100;not null" json:"version" binding:"required"`
+
+	// Terrain is the terrain the server is running.
+	Terrain string `gorm:"not null;default:'any'" json:"terrain" binding:"required"`
+
+	// Description is a brief description of the server.
+	Description string `gorm:"type:text;not null" json:"description" binding:"required"`
+
+	// HasPassword indicates if the server requires a password.
+	HasPassword bool `gorm:"not null;default:false" json:"has_password"`
+
+	// MaxClients is the maximum number of clients allowed on the server.
+	MaxClients uint `gorm:"not null" json:"max_clients" binding:"required"`
+
+	// Clients is the list of clients connected to the server.
+	Clients []Client `gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE" json:"clients,omitempty"`
+
+	// Visible indicates if the server is visible to users.
+	Visible bool `gorm:"not null;default:true" json:"is_visible"`
+
+	// ServerDate is the date the server was created.
+	ServerDate time.Time `gorm:"autoCreateTime" json:"server_date,omitempty"`
+
+	// LastUpdateDate is the date the server was last updated.
+	LastUpdateDate time.Time `gorm:"autoUpdateTime" json:"last_update_date,omitempty"`
+
+	// LastSyncDate is the date the server was last synchronized by the server itself.
+	LastSyncDate time.Time `json:"last_sync_date,omitempty"`
+
+	// ApiKeyID is the foreign key to the API key used to manage this server.
+	// This is unique to ensure one-to-one relationship between server and API key.
+	// It is also not null to ensure that a server always has an API key.
+	ApiKeyID int `gorm:"uniqueIndex;not null" json:"api_key_id"`
+
+	// ApiKey is the API key used to manage this server.
+	ApiKey ApiKey `gorm:"constraint:OnDelete:CASCADE;"`
 }
 
 // BeforeCreate will run before each insert operation to make sure the UUID
@@ -52,6 +91,28 @@ func (s *Server) BeforeCreate(tx *gorm.DB) (err error) {
 
 func (s *Server) ID() string {
 	return s.ServerID.String()
+}
+
+// Client represents a high level definition of a server client.
+type Client struct {
+	// ClientID is the primary key of the client
+	ClientID int `gorm:"primaryKey;autoIncrement" json:"client_id,omitempty"`
+	// Role specifies the client role from the server
+	Role int
+	// Name is the client name
+	Name string
+	// ServerID is the foreign key
+	ServerID uuid.UUID `json:"server_id"`
+	// Server is who the client belongs to
+	Server Server `gorm:"constraint:OnDelete:CASCADE"`
+	// ConnectedAt specifies the time the client connected
+	ConnectedAt *time.Time
+	// UpdatedAt specifies the time the client was last updated
+	UpdatedAt *time.Time
+}
+
+func (r *Client) ID() string {
+	return strconv.Itoa(r.ClientID)
 }
 
 type ServerStatus string

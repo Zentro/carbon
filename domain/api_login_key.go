@@ -1,4 +1,4 @@
-// Copyright (C) 2022 Rafael Galvan
+// Copyright (C) 2022, 2025 Rafael Galvan
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"gorm.io/gorm"
 )
 
 // ApiLoginKey represens a high level definition of an API login key.
@@ -31,7 +30,7 @@ import (
 // super key.
 type ApiLoginKey struct {
 	// ApiLoginkeyID is the primary key of the API login key.
-	ApiLoginID uint `gorm:"primaryKey" json:"api_login_key_id"`
+	ApiLoginKeyID uint `gorm:"primaryKey" json:"api_login_key_id"`
 	// UserID references the user who the API login key belongs to.
 	UserID int `gorm:"not null" json:"user_id"`
 	// LoginKey is the actual key string
@@ -46,37 +45,28 @@ type ApiLoginKey struct {
 	// IP is the source of the request, if this does not match then this key should no longer be
 	// considered valid.
 	IP string `gorm:"not null" json:"ip_address"`
-	// gorm.Model will include the GORM managed CreatedAt, UpdatedAt, and DeletedAt
-	// fields.
-	gorm.Model
+	// CreatedAt specifies the time of creation for this key.
+	// Automatically managed by GORM.
+	CreatedAt time.Time
+	// UpdatedAt specifies the time of update for this key.
+	// Automatically managed by GORM.
+	UpdatedAt time.Time
+	// DeletedAt specifies the time of soft deletion for this key.
+	// Automatically managed by GORM.
+	DeletedAt time.Time
 }
 
-func NewToken(uid int, ip_addr string) (*Token, error) {
-	loginTokenExpiresAt := time.Now().Add(24 * time.Hour)
-	refreshTokenExpiresAt := time.Now().Add(24 * 7 * time.Hour)
-
-	loginToken, err := generateToken(uid, loginTokenExpiresAt)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshToken, err := generateToken(uid, refreshTokenExpiresAt)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Token{
-		UserID:                uid,
-		LoginToken:            loginToken,
-		LoginTokenExpiresAt:   loginTokenExpiresAt,
-		RefreshToken:          refreshToken,
-		RefreshTokenExpiresAt: refreshTokenExpiresAt,
-		IPAddress:             ip_addr,
-	}, nil
+// ApiLoginClaims represents the claims used in the JWT for the API login key.
+type ApiLoginClaims struct {
+	// UserID is the ID of the user associated with the API login key.
+	UserID int `json:"user_id"`
+	// Standard JWT claims.
+	jwt.RegisteredClaims
 }
 
-func generateToken(userID int, expiresAt time.Time) (string, error) {
-	claims := CustomClaims{
+// NewJwtKey creates a new JWT key with the given claims.
+func NewJwtKey(userID int, expiresAt time.Time) (string, error) {
+	claims := ApiLoginClaims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
@@ -84,11 +74,30 @@ func generateToken(userID int, expiresAt time.Time) (string, error) {
 		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(config.Get().Secret))
+	key := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return key.SignedString([]byte(config.Get().Secret))
 }
 
-type CustomClaims struct {
-	UserID int `json:"user_id"`
-	jwt.RegisteredClaims
+// NewApiLoginKey creates a new API login key.
+func NewApiLoginKey(userID int, ip string) (*ApiLoginKey, error) {
+	// Generate a random 32 byte key for the API login key that expires in 24 hours.
+	loginKey, err := NewJwtKey(userID, time.Now().Add(24*time.Hour))
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate a random 32 byte key for the API refresh key that expires in 7 days.
+	refreshKey, err := NewJwtKey(userID, time.Now().Add(24*7*time.Hour))
+	if err != nil {
+		return nil, err
+	}
+
+	return &ApiLoginKey{
+		UserID:              userID,
+		LoginKey:            loginKey,
+		LoginKeyExpiresAt:   time.Now().Add(24 * time.Hour),
+		RefreshKey:          refreshKey,
+		RefreshKeyExpiresAt: time.Now().Add(24 * 7 * time.Hour),
+		IP:                  ip,
+	}, nil
 }

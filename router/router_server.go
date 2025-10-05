@@ -20,15 +20,9 @@ import (
 	"carbon/internal/server"
 	"net/http"
 
+	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
-
-type CustomClaims struct {
-	UserID   int    `json:"uid"`
-	ServerID string `json:"sid"`
-	jwt.RegisteredClaims
-}
 
 // getAllServers godoc
 //
@@ -82,21 +76,33 @@ func getServer(c *gin.Context) {
 //	@Router		/servers [post]
 func postCreateServer(c *gin.Context) {
 	apiKey := ExtractApiKey(c)
+	manager := ExtractServerManager(c)
 
 	var server domain.Server
 	if err := c.BindJSON(&server); err != nil {
 		return
 	}
 
-	server.ApiKeyID = &apiKey.ApiKeyID
+	// Check if the API key is already binded to a server.
+	if _, err := manager.FindByApiKeyID(apiKey.ApiKeyID); err == nil {
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{
+			"error": "The API key provided is already binded to a server.",
+		})
+		return
+	}
 
-	manager := ExtractServerManager(c)
+	// Bind the API key to the server.
+	server.ApiKeyID = apiKey.ApiKeyID
+
+	// Create the server now.
 	if err := manager.Create(&server); err != nil {
 		NewError(err).Abort(c)
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, gin.H{
+		"server": server,
+	})
 }
 
 // putUpdateServer godoc
@@ -112,13 +118,13 @@ func postCreateServer(c *gin.Context) {
 //	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server} [put]
 func putUpdateServer(c *gin.Context) {
-	var updateServerRequest domain.Server
-	if err := c.BindJSON(&updateServerRequest); err != nil {
+	var server domain.Server
+	if err := c.BindJSON(&server); err != nil {
 		return
 	}
 
 	manager := ExtractServerManager(c)
-	if err := manager.Update(&updateServerRequest); err != nil {
+	if err := manager.Update(&server); err != nil {
 		NewError(err).Abort(c)
 		return
 	}
@@ -150,30 +156,29 @@ func patchServerPower(c *gin.Context) {
 		return
 	}
 
-	// Generally, the server could report itself as "crashed", but that
-	// isn't common. Rather, we expect the server to always report itself
-	// as "online" or "offline".
+	// Only the values defined in the ServerStatus type are valid.
+	// The power status can really only ever be defined by us.
+	// The user can set it to "online" only after we verify that we can
+	// actually connect to the server.
+	// The user can set it to "offline" at any time.
+	// Any other value is invalid.
 	if !data.PowerStatus.IsValid() {
 		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
 			"error": "The power status provided was not valid, should be one of \"online\", \"offline\"",
 		})
 	}
 
-	// Avoid wasting resources by trying to set the server power status
-	// to what it already is.
+	// If the power status is already set to the requested value, do nothing.
 	if s.GetPowerStatus() == data.PowerStatus {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Cannot set the status of the server with the same status.",
+			"error": "The power status is already set to the requested value",
 		})
 	}
 
 	// If we're attempting to set the server "online" we need to verify
-	// that we can connect to it. The process should expire before the
-	// HTTP connection does so we can return to the requester whether
-	// the server power status change was successful or if we couldn't
-	// establish whether or not the server is alive.
+	// that we can actually connect to it first. This is a BLOCKING call.
 	if data.PowerStatus.IsOnline() {
-		if _, err := server.Connect(s.Host, s.Port, s.Version); err != nil {
+		if err := server.Knock(*s, requestid.Get(c)); err != nil {
 			NewError(err).Abort(c)
 			return
 		}
@@ -207,7 +212,7 @@ func putSyncServer(c *gin.Context) {
 	// it's really not.
 	if !s.GetPowerStatus().IsOnline() {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error": "Cannot sync a server that is stopped or crashed.",
+			"error": "Cannot sync a server that is one of \"stopped\", \"crashed\"",
 		})
 	}
 

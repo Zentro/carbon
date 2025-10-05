@@ -19,8 +19,6 @@ import (
 	"carbon/domain"
 	"context"
 	"database/sql"
-	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,32 +29,12 @@ type Manager struct {
 	db *gorm.DB
 }
 
-// NewManager creates a new instance of Manager with the provided context and database connection.
-// It initializes the Manager by calling its init method.
-//
-// Parameters:
-//   - ctx: The context to be used for the Manager.
-//   - db: A pointer to a gorm.DB instance representing the database connection.
-//
-// Returns:
-//   - A pointer to the newly created Manager instance.
-//   - An error if the initialization fails.
 func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 	m := &Manager{db: db}
-	err := m.init()
-	return m, err
+	return m, nil
 }
 
-func (m *Manager) init() error {
-	slog.Info("initializing server schema into the database...")
-
-	if err := m.db.AutoMigrate(&domain.Server{}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
+// FindByID retrieves a server from the database based on its UUID.
 func (m *Manager) FindByID(id string) (*domain.Server, error) {
 	uuid, err := uuid.Parse(id)
 	if err != nil {
@@ -70,15 +48,7 @@ func (m *Manager) FindByID(id string) (*domain.Server, error) {
 	return &server, nil
 }
 
-// Create adds a new server record to the database.
-// It takes a pointer to a domain.Server object as input and returns an error if the operation fails.
-// If the server is successfully created, it returns nil.
-//
-// Parameters:
-//   - server: A pointer to the domain.Server object to be created.
-//
-// Returns:
-//   - error: An error if the database operation fails, otherwise nil.
+// Create adds a new server to the database.
 func (m *Manager) Create(server *domain.Server) error {
 	if err := m.db.Create(&server).Error; err != nil {
 		return err
@@ -86,20 +56,22 @@ func (m *Manager) Create(server *domain.Server) error {
 	return nil
 }
 
+// Update modifies an existing server in the database.
 func (m *Manager) Update(s *domain.Server) error {
 	var server domain.Server
 	if err := m.db.First(&server, "server_id = ?", s.ID()).Error; err != nil {
-		return fmt.Errorf("server not found: %w", err)
+		return err
 	}
 
 	// Update the fields that need to be changed
 	if err := m.db.Model(&server).Updates(s).Error; err != nil {
-		return fmt.Errorf("failed to update server: %w", err)
+		return err
 	}
 
 	return nil
 }
 
+// FindByHostAndPort retrieves a server from the database based on its host and port.
 func (m *Manager) FindByHostAndPort(host string, port int) (*domain.Server, error) {
 	var server domain.Server
 	if err := m.db.Where("host = ? AND port = ?", host, port).First(&server).Error; err != nil {
@@ -108,6 +80,17 @@ func (m *Manager) FindByHostAndPort(host string, port int) (*domain.Server, erro
 	return &server, nil
 }
 
+// FindByApiKeyID retrieves a server from the database based on its API key ID.
+// This is useful to check if an API key is already binded to a server.
+func (m *Manager) FindByApiKeyID(apiKeyID int) (*domain.Server, error) {
+	var server domain.Server
+	if err := m.db.Where("api_key_id = ?", apiKeyID).First(&server).Error; err != nil {
+		return nil, err
+	}
+	return &server, nil
+}
+
+// Collection retrieves all servers from the database.
 func (m *Manager) Collection() ([]*domain.Server, error) {
 	var servers []*domain.Server
 	if err := m.db.Find(&servers).Error; err != nil {
@@ -116,6 +99,8 @@ func (m *Manager) Collection() ([]*domain.Server, error) {
 	return servers, nil
 }
 
+// Delete removes a server from the database by ID.
+// This operation is reversible as it only does a "soft delete".
 func (m *Manager) Delete(id int) error {
 	if err := m.db.Delete(&domain.Server{}, id).Error; err != nil {
 		return err
@@ -123,6 +108,7 @@ func (m *Manager) Delete(id int) error {
 	return nil
 }
 
+// UpdateLastSync updates the last_sync_date field of a server to the current time.
 func (m *Manager) UpdateLastSync(id string) error {
 	uuid, err := uuid.Parse(id)
 	if err != nil {

@@ -104,8 +104,8 @@ func postAuthLogin(c *gin.Context) {
 
 	user := authResponse.User
 
-	manager := ExtractTokenManager(c)
-	token, err := domain.NewToken(user.UserID, c.ClientIP())
+	manager := ExtractApiLoginKeyManager(c)
+	token, err := domain.NewApiLoginKey(user.UserID, c.ClientIP())
 	if err != nil {
 		NewError(err).Abort(c)
 		return
@@ -116,8 +116,8 @@ func postAuthLogin(c *gin.Context) {
 		return
 	}
 
-	authResponse.LoginToken = token.LoginToken
-	authResponse.RefreshToken = token.RefreshToken
+	authResponse.LoginToken = token.LoginKey
+	authResponse.RefreshToken = token.RefreshKey
 
 	c.JSON(http.StatusOK, authResponse)
 }
@@ -133,7 +133,7 @@ func postAuthLogin(c *gin.Context) {
 //	@Failure	500	{object}	RequestError
 //	@Router		/auth/logout/ [post]
 func postAuthLogout(c *gin.Context) {
-	if err := ExtractTokenManager(c).Invalidate(ExtractToken(c).ID); err != nil {
+	if err := ExtractApiLoginKeyManager(c).Invalidate(ExtractApiLoginKey(c).ApiLoginKeyID); err != nil {
 		NewError(err).Abort(c)
 		return
 	}
@@ -156,41 +156,41 @@ func postAuthRefresh(c *gin.Context) {
 		return
 	}
 
-	var token domain.Token
+	var apiKey domain.ApiLoginKey
 
-	manager := ExtractTokenManager(c)
-	token, err := manager.FindByToken(authRefreshRequest.LoginToken)
+	manager := ExtractApiLoginKeyManager(c)
+	apiKey, err := manager.FindByToken(authRefreshRequest.LoginToken)
 	if err != nil {
 		NewError(err).Abort(c)
 		return
 	}
 
-	if c.ClientIP() != token.IPAddress {
+	if c.ClientIP() != apiKey.IP {
 		NewError(ErrIpMismatch).Abort(c)
 		return
 	}
 
-	if time.Now().After(token.RefreshTokenExpiresAt) {
+	if time.Now().After(apiKey.RefreshKeyExpiresAt) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": "The authorization heads are expired and can not be reissued.",
 		})
 		return
 	}
 
-	newToken, err := domain.NewToken(token.UserID, token.IPAddress)
+	newApiKey, err := domain.NewApiLoginKey(apiKey.UserID, apiKey.IP)
 	if err != nil {
 		NewError(err).Abort(c)
 		return
 	}
 
-	if err := manager.Refresh(newToken); err != nil {
+	if err := manager.Refresh(newApiKey); err != nil {
 		NewError(err).Abort(c)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"login_token":   newToken.LoginToken,
-		"refresh_token": newToken.RefreshToken,
+		"login_token":   newApiKey.LoginKey,
+		"refresh_token": newApiKey.RefreshKey,
 	})
 }
 

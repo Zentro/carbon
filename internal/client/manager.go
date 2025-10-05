@@ -18,7 +18,6 @@ package client
 import (
 	"carbon/domain"
 	"context"
-	"log/slog"
 
 	"gorm.io/gorm"
 )
@@ -29,18 +28,7 @@ type Manager struct {
 
 func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 	m := &Manager{db: db}
-	err := m.init()
-	return m, err
-}
-
-func (m *Manager) init() error {
-	slog.Info("initializing client schema into the database...")
-
-	if err := m.db.AutoMigrate(&domain.Client{}); err != nil {
-		return err
-	}
-
-	return nil
+	return m, nil
 }
 
 func (m *Manager) FindByIDForServer(s *domain.Server, id int) (*domain.Client, error) {

@@ -20,9 +20,9 @@ import "time"
 // ApiKey represents a high level definition of an API key.
 type ApiKey struct {
 	// ApiKeyID is the primary key of the API key
-	ApiKeyID uint `gorm:"primaryKey" json:"api_key_id,omitempty"`
+	ApiKeyID int `gorm:"primaryKey" json:"api_key_id,omitempty"`
 	// UserID references the user who the API key belongs to
-	UserID uint `gorm:"not null" json:"api_key_user_id" binding:"required"`
+	UserID int `gorm:"not null" json:"api_key_user_id" binding:"required"`
 	// Key is the actual API key string
 	Key string `gorm:"not null" json:"api_key_key,omitempty"`
 	// Role specifies the role associated with the API key

@@ -1,4 +1,4 @@
-// Copyright (C) 2022-2023 Rafael Galvan <rafael.galvan@rigsofrods.org>
+// Copyright (C) 2022, 2025 Rafael Galvan <rafael.galvan@rigsofrods.org>
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ import (
 	"carbon/internal/api_login_key"
 	"carbon/internal/resource"
 	"carbon/internal/server"
-	"carbon/internal/token"
 	"carbon/internal/user"
 	"carbon/remote"
 	"fmt"
@@ -31,6 +30,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+type AuthContext struct {
+	User domain.User `json:"user,omitempty"`
+}
 
 // AttachCorsHeaders attaches access control headers to all requests.
 func AttachCorsHeaders() gin.HandlerFunc {
@@ -47,6 +50,8 @@ func AttachCorsHeaders() gin.HandlerFunc {
 	}
 }
 
+// AttachApiKeyManager attaches the API key manager instance and set it into
+// the gin.Context
 func AttachApiKeyManager(m *api_key.Manager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("api_key_manager", m)
@@ -54,6 +59,8 @@ func AttachApiKeyManager(m *api_key.Manager) gin.HandlerFunc {
 	}
 }
 
+// AttachApiClient attaches the API client instance and set it into the
+// gin.Context
 func AttachApiClient(client remote.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("api_client", client)
@@ -61,6 +68,8 @@ func AttachApiClient(client remote.Client) gin.HandlerFunc {
 	}
 }
 
+// AttachResourceManager attaches the resource manager instance and set it into
+// the gin.Context
 func AttachResourceManager(m *resource.Manager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("resource_manager", m)
@@ -68,6 +77,8 @@ func AttachResourceManager(m *resource.Manager) gin.HandlerFunc {
 	}
 }
 
+// AttachUserManager attaches the user manager instance and set it into the
+// gin.Context
 func AttachUserManager(m *user.Manager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("user_manager", m)
@@ -75,6 +86,8 @@ func AttachUserManager(m *user.Manager) gin.HandlerFunc {
 	}
 }
 
+// AttachServerManager attaches the server manager instance and set it into the
+// gin.Context
 func AttachServerManager(m *server.Manager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("server_manager", m)
@@ -82,13 +95,17 @@ func AttachServerManager(m *server.Manager) gin.HandlerFunc {
 	}
 }
 
-func AttachTokenManager(m *api_login_key.Manager) gin.HandlerFunc {
+// AttachApiLoginKeyManager attaches the API login key manager instance and set
+// it into the gin.Context
+func AttachApiLoginKeyManager(m *api_login_key.Manager) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Set("token_manager", m)
+		c.Set("api_login_key_manager", m)
 		c.Next()
 	}
 }
 
+// ExtractApiKeyManager returns the API key manager instance and set it into the
+// gin.Context
 func ExtractApiKeyManager(c *gin.Context) *api_key.Manager {
 	if v, ok := c.Get("api_key_manager"); ok {
 		return v.(*api_key.Manager)
@@ -123,17 +140,17 @@ func ExtractServerManager(c *gin.Context) *server.Manager {
 	panic("router/middleware: server manager not present in context")
 }
 
-// ExtractTokenManager returns the token manager instance and set it into the
+// ExtractApiLoginKeyManager returns the api login key manager instance and set it into the
 // gin.Context
-func ExtractTokenManager(c *gin.Context) *token.Manager {
-	if v, ok := c.Get("token_manager"); ok {
-		return v.(*token.Manager)
+func ExtractApiLoginKeyManager(c *gin.Context) *api_login_key.Manager {
+	if v, ok := c.Get("api_login_key_manager"); ok {
+		return v.(*api_login_key.Manager)
 	}
-	panic("router/middleware: token manager not presnet in context")
+	panic("router/middleware: api login key manager not present in context")
 }
 
-// ResourceExists will ensure that the request resource exists in our cache.
-// Returns a 404 if we cannot locate it. If the resource is found it is set into
+// ResourceExists will ensure that the request resource exists in the cache.
+// Returns a 404 if it can't be located. If the resource is found it is set into
 // the request context.
 func ResourceExists() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -154,7 +171,7 @@ func ResourceExists() gin.HandlerFunc {
 }
 
 // ServerExists will ensure that the request server exists in the database.
-// Returns a 404 if we cannot locate it. If the resource is found it is set into
+// Returns a 404 if it can't be located it. If the server is found it is set into
 // the request context.
 func ServerExists() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -173,6 +190,7 @@ func ServerExists() gin.HandlerFunc {
 	}
 }
 
+// ApiKeyKeyExists will ensure the API key exists in the database.
 func ApiKeyKeyExists() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Param("api_key") != "" {
@@ -235,14 +253,14 @@ func ExtractUser(c *gin.Context) domain.User {
 	return v.(domain.User)
 }
 
-// ExtractToken will return the token from the gin.Context or panic if it
+// ExtractApiLoginKey will return the API login key from the gin.Context or panic if it
 // is not present.
-func ExtractToken(c *gin.Context) domain.Token {
-	v, ok := c.Get("token")
+func ExtractApiLoginKey(c *gin.Context) *domain.ApiLoginKey {
+	v, ok := c.Get("apiLoginKey")
 	if !ok {
-		panic("router/middleware: cannot extract token: not present in request context")
+		panic("router/middleware: cannot extract API login key: not present in request context")
 	}
-	return v.(domain.Token)
+	return v.(*domain.ApiLoginKey)
 }
 
 // RequireApiAuthorization will only check if the proper API authentication
@@ -335,12 +353,12 @@ func RequireAuthorization() gin.HandlerFunc {
 			return
 		}
 
-		var r domain.Token
-		manager := ExtractTokenManager(c)
+		var r domain.ApiLoginKey
+		manager := ExtractApiLoginKeyManager(c)
 		r, dbErr := manager.FindByToken(token[1])
-		if dbErr != nil || time.Now().After(r.LoginTokenExpiresAt) {
+		if dbErr != nil || time.Now().After(r.LoginKeyExpiresAt) {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "You are not authorized to access this endpoint.",
+				"error": "You are not authorized to access this resource.",
 			})
 
 			return

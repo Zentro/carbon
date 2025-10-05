@@ -30,18 +30,7 @@ type Manager struct {
 
 func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 	m := &Manager{db: db}
-	err := m.init()
-	return m, err
-}
-
-func (m *Manager) init() error {
-	slog.Info("initializing token schema into the database...")
-
-	if err := m.db.AutoMigrate(&domain.Token{}); err != nil {
-		return err
-	}
-
-	return nil
+	return m, nil
 }
 
 func (m *Manager) AsyncPurgeDb(ctx context.Context) error {
@@ -50,7 +39,7 @@ func (m *Manager) AsyncPurgeDb(ctx context.Context) error {
 	now := time.Now()
 
 	// Find all tokens where both tokens are expired
-	var tokens []domain.Token
+	var tokens []domain.ApiLoginKey
 	if err := m.db.WithContext(ctx).Where("login_token_expires_at < ? AND refresh_token_expires_at < ?", now, now).Find(&tokens).Error; err != nil {
 		return err
 	}
@@ -65,31 +54,31 @@ func (m *Manager) AsyncPurgeDb(ctx context.Context) error {
 	return nil
 }
 
-func (m *Manager) FindByID(id uint) (domain.Token, error) {
-	var token domain.Token
+func (m *Manager) FindByID(id uint) (domain.ApiLoginKey, error) {
+	var token domain.ApiLoginKey
 	if err := m.db.First(&token, id).Error; err != nil {
-		return domain.Token{}, err
+		return domain.ApiLoginKey{}, err
 	}
 	return token, nil
 }
 
-func (m *Manager) FindByToken(tokenValue string) (domain.Token, error) {
-	var token domain.Token
+func (m *Manager) FindByToken(tokenValue string) (domain.ApiLoginKey, error) {
+	var token domain.ApiLoginKey
 	if err := m.db.Where("login_token = ?", tokenValue).First(&token).Error; err != nil {
-		return domain.Token{}, err
+		return domain.ApiLoginKey{}, err
 	}
 	return token, nil
 }
 
-func (m *Manager) Create(s *domain.Token) error {
+func (m *Manager) Create(s *domain.ApiLoginKey) error {
 	if err := m.db.Create(&s).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Manager) Collection() ([]*domain.Token, error) {
-	var tokens []*domain.Token
+func (m *Manager) Collection() ([]*domain.ApiLoginKey, error) {
+	var tokens []*domain.ApiLoginKey
 	if err := m.db.Find(&tokens).Error; err != nil {
 		return nil, err
 	}
@@ -98,21 +87,21 @@ func (m *Manager) Collection() ([]*domain.Token, error) {
 
 // Invalidate sets the ExpiresAt field to now to mark the token as invalid
 func (m *Manager) Invalidate(id uint) error {
-	var token domain.Token
+	var token domain.ApiLoginKey
 	if err := m.db.First(&token, id).Error; err != nil {
 		return err
 	}
 
 	// Set the expiration time to now. This will allow us to purge it later.
-	token.LoginTokenExpiresAt = time.Now()
-	token.RefreshTokenExpiresAt = time.Now()
+	token.LoginKeyExpiresAt = time.Now()
+	token.RefreshKeyExpiresAt = time.Now()
 	if err := m.db.Save(&token).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Manager) Refresh(t *domain.Token) error {
+func (m *Manager) Refresh(t *domain.ApiLoginKey) error {
 	if err := m.db.Save(&t).Error; err != nil {
 		return err
 	}

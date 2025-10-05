@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Rafael Galvan
+// Copyright (C) 2025 Rafael Galvan
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,25 +14,3 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package domain
-
-import "strconv"
-
-// Player represents a high level definition of a server Player.
-type Client struct {
-	// PlayerID is the primary key of the Player
-	PlayerID int
-	// Role specifies the player role from the server
-	Role int
-	// Name is the player name
-	Name string
-	// PlayerState specifies the player state
-	PlayerState int
-	// ServerID is the foreign key
-	ServerID int
-	// Server is who the Player belongs to
-	Server Server `gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE"`
-}
-
-func (r *Client) ID() string {
-	return strconv.Itoa(r.PlayerID)
-}

@@ -19,10 +19,10 @@ import (
 	"carbon/config"
 	"carbon/domain"
 	"carbon/internal/api_key"
+	"carbon/internal/api_login_key"
 	"carbon/internal/client"
 	"carbon/internal/resource"
 	"carbon/internal/server"
-	"carbon/internal/token"
 	"carbon/internal/user"
 	"carbon/remote"
 	"carbon/system"
@@ -32,23 +32,28 @@ import (
 	_ "carbon/docs" // This imports the docs package created by Swag CLI
 
 	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type ManagerGroup struct {
-	ResourceManager *resource.Manager
-	ServerManager   *server.Manager
-	UserManager     *user.Manager
-	TokenManager    *token.Manager
-	ApiKeyManager   *api_key.Manager
-	ClientManager   *client.Manager
+	ResourceManager    *resource.Manager
+	ServerManager      *server.Manager
+	UserManager        *user.Manager
+	ApiLoginKeyManager *api_login_key.Manager
+	ApiKeyManager      *api_key.Manager
+	ClientManager      *client.Manager
 }
 
 type Role = domain.ApiKeyRole
 type ServerStatus = domain.ServerStatus
 
+// NewClient creates a new Gin router instance with all the routes and middleware
+// configured. It requires a remote.Client instance to handle remote operations
+// and a ManagerGroup containing all the necessary managers for handling
+// resources, users, servers, and tokens.
 func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	debug := config.Get().Debug
 	gin.SetMode(map[bool]string{true: gin.DebugMode, false: gin.ReleaseMode}[debug])
@@ -62,16 +67,20 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	}
 
 	router.Use(gin.Recovery())
+	// Attach a request ID to each request for better tracing.
+	// The request ID is also included in the response headers as "X-Request-ID".
+	router.Use(requestid.New())
 	router.Use(AttachApiClient(remote))
 	router.Use(AttachResourceManager(managers.ResourceManager),
 		AttachUserManager(managers.UserManager),
 		AttachServerManager(managers.ServerManager),
-		AttachTokenManager(managers.TokenManager),
+		AttachApiLoginKeyManager(managers.ApiLoginKeyManager),
 		AttachApiKeyManager(managers.ApiKeyManager))
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(gin.LoggerWithFormatter(func(params gin.LogFormatterParams) string {
 		slog.Info("incoming request",
 			"client_ip", params.ClientIP,
+			"request_id", params.Request.Header.Get("X-Request-ID"),
 			"user_agent", params.Request.UserAgent(),
 			"latency", params.Latency,
 			"status_code", params.StatusCode,
@@ -121,7 +130,6 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 
 	router.GET("/servers", getAllServers)
 	router.GET("/servers/:server", ServerExists(), getServer)
-	router.GET("/servers/me", getServerMe)
 
 	router.POST("/servers", RequireApiAuthorization(), RoleRequired(Role("user")), postCreateServer)
 
@@ -134,6 +142,7 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 	)
 	{
 		server.PUT("", putUpdateServer)
+		server.GET("/me", getServerMe)
 		server.PUT("/sync", putSyncServer)
 		server.PATCH("/power", patchServerPower)
 
@@ -159,11 +168,15 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 		api_key.DELETE("/:api_key", deleteApiKey, ApiKeyKeyExists())
 	}
 
-	router.GET("/resources", getAllResources)
-	router.GET("/resources/:resource", ResourceExists(), getResource)
-	router.GET("/resources/:resource/reviews", ResourceExists(), getResourceReviews)
-	router.GET("/resources/:resource/versions", ResourceExists(), getResourceVersions)
-	router.GET("/resources/:resource/updates", ResourceExists(), getResourceUpdates)
+	resources := router.Group("/resources")
+	{
+		resources.GET("", getAllResources)
+		resources.GET("/:resource", ResourceExists(), getResource)
+		resources.GET("/:resource/reviews", ResourceExists(), getResourceReviews)
+		resources.GET("/:resource/versions", ResourceExists(), getResourceVersions)
+		resources.GET("/:resource/updates", ResourceExists(), getResourceUpdates)
+	}
+
 	router.GET("/resource-categories", getAllCategories)
 	router.GET("/resource-categories/:category", getCategory)
 	router.GET("/resource-versions/:version", getResourceVersion)

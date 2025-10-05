@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"log/slog"
 
 	"gorm.io/gorm"
 )
@@ -16,18 +15,7 @@ type Manager struct {
 
 func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 	m := &Manager{db: db}
-	err := m.init()
-	return m, err
-}
-
-func (m *Manager) init() error {
-	slog.Info("initializing api key schema into the database...")
-
-	if err := m.db.AutoMigrate(&domain.ApiKey{}); err != nil {
-		return err
-	}
-
-	return nil
+	return m, nil
 }
 
 func (m *Manager) FindByKey(key string) (*domain.ApiKey, error) {
