@@ -26,6 +26,15 @@ func (m *Manager) FindByKey(key string) (*domain.ApiKey, error) {
 	return &apiKey, nil
 }
 
+// FindByID looks up an API key by its primary key id.
+func (m *Manager) FindByID(id int) (*domain.ApiKey, error) {
+	var apiKey domain.ApiKey
+	if err := m.db.First(&apiKey, "api_key_id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &apiKey, nil
+}
+
 func (m *Manager) FindByUser(user int) ([]*domain.ApiKey, error) {
 	var apiKeys []*domain.ApiKey
 	if err := m.db.Where("user_id = ?", user).Find(&apiKeys).Error; err != nil {
@@ -51,6 +60,14 @@ func (m *Manager) Collection() ([]*domain.ApiKey, error) {
 
 func (m *Manager) Delete(key string) error {
 	if err := m.db.Delete(&domain.ApiKey{}, "`key` = ?", key).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteByID removes an API key by its primary key id.
+func (m *Manager) DeleteByID(id int) error {
+	if err := m.db.Delete(&domain.ApiKey{}, "api_key_id = ?", id).Error; err != nil {
 		return err
 	}
 	return nil

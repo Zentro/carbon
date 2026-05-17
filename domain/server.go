@@ -57,7 +57,7 @@ type Server struct {
 	MaxClients uint `gorm:"not null" json:"max_clients" binding:"required"`
 
 	// Clients is the list of clients connected to the server.
-	Clients []Client `gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE" json:"clients,omitempty"`
+	Clients []Client `gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE" json:"clients"`
 
 	// Visible indicates if the server is visible to users.
 	Visible bool `gorm:"not null;default:true" json:"is_visible"`
@@ -71,14 +71,24 @@ type Server struct {
 	// LastSyncDate is the date the server was last synchronized by the server itself.
 	LastSyncDate time.Time `json:"last_sync_date,omitempty"`
 
-	// ApiKeyID is the foreign key to the API key used to manage this server.
-	// This is unique to ensure one-to-one relationship between server and API key.
-	// It is also not null to ensure that a server always has an API key.
-	ApiKeyID int `gorm:"uniqueIndex;not null" json:"api_key_id"`
-
-	// ApiKey is the API key used to manage this server.
-	ApiKey ApiKey `gorm:"constraint:OnDelete:CASCADE;"`
+	// OwnerUserID is the XF user id of the server's owner. Authorization
+	// (policy layer) reads this directly. API keys that manage the server
+	// at runtime are bound to the server via ApiKey.TargetKind/TargetID,
+	// not via a column on Server.
+	OwnerUserID int `gorm:"not null;index" json:"owner_user_id"`
 }
+
+// Kind implements domain.Manageable.
+func (s *Server) Kind() string { return "server" }
+
+// OwnerID implements domain.Manageable. Returns the user id stored in
+// OwnerUserID. Zero is treated by the policy layer as "no owner" and will
+// fail every ownership check; rows still at 0 mean the backfill hasn't
+// run or the column is freshly added.
+func (s *Server) OwnerID() int { return s.OwnerUserID }
+
+// EntityID implements domain.Manageable.
+func (s *Server) EntityID() string { return s.ServerID.String() }
 
 // BeforeCreate will run before each insert operation to make sure the UUID
 // will be not NIL. This can be removed if MariaDB supports the UUID() operation.

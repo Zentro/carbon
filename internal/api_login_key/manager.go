@@ -37,21 +37,9 @@ func (m *Manager) AsyncPurgeDb(ctx context.Context) error {
 	slog.Info("purging invalid tokens from the database...")
 
 	now := time.Now()
-
-	// Find all tokens where both tokens are expired
-	var tokens []domain.ApiLoginKey
-	if err := m.db.WithContext(ctx).Where("login_token_expires_at < ? AND refresh_token_expires_at < ?", now, now).Find(&tokens).Error; err != nil {
-		return err
-	}
-
-	// Soft delete the expired tokens
-	for _, token := range tokens {
-		if err := m.db.WithContext(ctx).Delete(&token).Error; err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return m.db.WithContext(ctx).
+		Where("login_key_expires_at < ? AND refresh_key_expires_at < ?", now, now).
+		Delete(&domain.ApiLoginKey{}).Error
 }
 
 func (m *Manager) FindByID(id uint) (domain.ApiLoginKey, error) {
@@ -64,7 +52,7 @@ func (m *Manager) FindByID(id uint) (domain.ApiLoginKey, error) {
 
 func (m *Manager) FindByToken(tokenValue string) (domain.ApiLoginKey, error) {
 	var token domain.ApiLoginKey
-	if err := m.db.Where("login_token = ?", tokenValue).First(&token).Error; err != nil {
+	if err := m.db.Where("login_key = ?", tokenValue).First(&token).Error; err != nil {
 		return domain.ApiLoginKey{}, err
 	}
 	return token, nil

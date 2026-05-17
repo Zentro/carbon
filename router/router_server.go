@@ -17,8 +17,10 @@ package router
 
 import (
 	"carbon/domain"
+	"carbon/internal/api_key"
 	"carbon/internal/server"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
@@ -75,33 +77,56 @@ func getServer(c *gin.Context) {
 //	@Failure	500		{object}	RequestError
 //	@Router		/servers [post]
 func postCreateServer(c *gin.Context) {
-	apiKey := ExtractApiKey(c)
-	manager := ExtractServerManager(c)
+	p := ExtractPrincipal(c)
+	servers := ExtractServerManager(c)
+	keys := ExtractApiKeyManager(c)
 
-	var server domain.Server
-	if err := c.BindJSON(&server); err != nil {
-		return
-	}
-
-	// Check if the API key is already binded to a server.
-	if _, err := manager.FindByApiKeyID(apiKey.ApiKeyID); err == nil {
-		c.AbortWithStatusJSON(http.StatusConflict, gin.H{
-			"error": "The API key provided is already binded to a server.",
+	// A bound credential cannot create new servers — its authority is
+	// scoped to one entity. Unbound personal keys and login keys can.
+	if p.IsBound() {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"error": "Bound credentials cannot create servers; use an unbound key or sign in.",
 		})
 		return
 	}
 
-	// Bind the API key to the server.
-	server.ApiKeyID = apiKey.ApiKeyID
+	var srv domain.Server
+	if err := c.BindJSON(&srv); err != nil {
+		return
+	}
+	srv.OwnerUserID = p.UserID
 
-	// Create the server now.
-	if err := manager.Create(&server); err != nil {
+	if err := servers.Create(&srv); err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+
+	// Generate the per-server bound API key the game server will use to
+	// authenticate. Returned exactly once in the response body.
+	plaintext, err := api_key.GenerateRandomKey()
+	if err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+	kind := srv.Kind()
+	id := srv.EntityID()
+	bound := &domain.ApiKey{
+		UserID:     p.UserID,
+		Name:       "Server: " + srv.Name,
+		Key:        plaintext,
+		Scopes:     domain.NewScopeSet(string(domain.ActionServerRead), string(domain.ActionServerWrite)),
+		TargetKind: &kind,
+		TargetID:   &id,
+		Enabled:    true,
+	}
+	if err := keys.Create(bound); err != nil {
 		NewError(err).Abort(c)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"server": server,
+		"server":  srv,
+		"api_key": plaintext,
 	})
 }
 
@@ -236,7 +261,18 @@ func putSyncServer(c *gin.Context) {
 //	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server}/clients [post]
 func postCreateServerClient(c *gin.Context) {
-	c.Status(http.StatusNotImplemented)
+	var client domain.Client
+	if err := c.BindJSON(&client); err != nil {
+		return
+	}
+
+	m := ExtractClientManager(c)
+	server := ExtractServer(c)
+	m.Create(&client, server)
+
+	c.JSON(http.StatusOK, gin.H{
+		"client": client,
+	})
 }
 
 // getAllServerClients godoc
@@ -251,7 +287,18 @@ func postCreateServerClient(c *gin.Context) {
 //	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server}/clients [get]
 func getAllServerClients(c *gin.Context) {
-	c.Status(http.StatusNotImplemented)
+	m := ExtractClientManager(c)
+	server := ExtractServer(c)
+
+	clients, err := m.CollectionByServerID(server.ServerID.String())
+	if err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"clients": clients,
+	})
 }
 
 // getServerClient godoc
@@ -267,9 +314,20 @@ func getAllServerClients(c *gin.Context) {
 //	@Failure	500		{object}	RequestError
 //	@Router		/servers/{server}/clients/{client} [get]
 func getServerClient(c *gin.Context) {
-	c.Status(http.StatusNotImplemented)
-}
+	m := ExtractClientManager(c)
+	id, err := strconv.Atoi(c.Param("client"))
+	if err != nil {
+		NewError(err).Abort(c)
+		return
+	}
 
-func getServerMe(c *gin.Context) {
-	c.Status(http.StatusNotImplemented)
+	client, err := m.FindByID(id)
+	if err != nil {
+		NewError(err).Abort(c)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"client": client,
+	})
 }

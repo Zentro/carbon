@@ -22,4 +22,15 @@ db:
   collation: 'utf8_unicode_ci'
 remote:
   location: ""
-  key: ""
+  # XenForo super-user API key. Used ONLY for /bridge/auth password validation
+  # (the `bridge` / `auth` scopes are super-user-only). Treat like a root credential.
+  bridge_key: ""
+  # Non-super XF User-type API key for all other XF calls (resource/user reads).
+  # Scopes: user:read, resource:read, resource_category:read, resource_rating:read.
+  data_key: ""
+  oauth:
+    # Confidential OAuth client registered at XF. Currently unused — XF does
+    # not implement the client_credentials grant. Reserved for the upcoming
+    # token introspection path that validates user OAuth tokens.
+    client_id: ""
+    client_secret: ""

@@ -16,76 +16,70 @@
 package router
 
 import (
+	"net/http"
+	"strings"
+
 	"carbon/domain"
 	"carbon/internal/api_key"
-	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-// getAllApiKeys godoc
+// getAllApiKeys returns the caller's API keys, or every key in the system
+// for an admin principal. Admin status is the wildcard scope, so this is
+// just a single branch on principal.IsAdmin().
 //
 //	@Tags		api_key
-//	@Accept		json
 //	@Produce	json
 //	@Success	200	{object}	[]domain.ApiKey
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
-//	@Router		/api-keys/ [get]
+//	@Router		/api-keys [get]
 func getAllApiKeys(c *gin.Context) {
-	api_keys, err := ExtractApiKeyManager(c).Collection()
+	p := ExtractPrincipal(c)
+	mgr := ExtractApiKeyManager(c)
+
+	var keys []*domain.ApiKey
+	var err error
+	if p.IsAdmin() {
+		keys, err = mgr.Collection()
+	} else {
+		keys, err = mgr.FindByUser(p.UserID)
+	}
 	if err != nil {
 		NewError(err).Abort(c)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"api_keys": api_keys,
-	})
+	for _, k := range keys {
+		k.Key = ""
+	}
+	c.JSON(http.StatusOK, gin.H{"api_keys": keys})
 }
 
-// getApiKey godoc
+// getApiKey returns one API key. The plaintext Key is redacted; it was
+// only ever returned at creation time.
 //
 //	@Tags		api_key
-//	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	[]domain.ApiKey
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
-//	@Router		/api-keys/ [get]
+//	@Param		id	path		int	true	"API Key ID"
+//	@Success	200	{object}	domain.ApiKey
+//	@Router		/api-keys/{id} [get]
 func getApiKey(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"api_key": ExtractApiKeyKey(c),
-	})
+	k := extractTargetApiKey(c)
+	redacted := *k
+	redacted.Key = ""
+	c.JSON(http.StatusOK, gin.H{"api_key": redacted})
 }
 
-// getApiKey godoc
-//
-//	@Tags		api_key
-//	@Accept		json
-//	@Produce	json
-//	@Success	200	{object}	[]domain.ApiKey
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
-//	@Router		/api-keys/{user} [get]
-func getUserApiKeys(c *gin.Context) {
-	user := c.Param("user")
-	// TODO: Validate user is an integer
-	u, _ := strconv.Atoi(user)
-	manager := ExtractApiKeyManager(c)
-	api_keys, err := manager.FindByUser(u)
-	if err != nil {
-		NewError(err).Abort(c)
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"api_keys": api_keys,
-	})
+// createApiKeyRequest is the body of POST /api-keys. Users create personal,
+// unbound keys this way; bound keys are issued by server-creation only.
+type createApiKeyRequest struct {
+	// Name is a human-readable label shown in the dashboard. Required.
+	Name string `json:"name" binding:"required"`
+	// Scopes is the explicit subset of the caller's authority this key
+	// will carry. Empty means "inherit the full role" — useful for a
+	// general-purpose personal token. Wildcards are rejected; pass
+	// concrete actions only.
+	Scopes []string `json:"scopes"`
 }
 
 // postCreateApiKey godoc
@@ -93,55 +87,83 @@ func getUserApiKeys(c *gin.Context) {
 //	@Tags		api_key
 //	@Accept		json
 //	@Produce	json
-//	@Param		apiKey	body		domain.ApiKey	true	"API Key Object"
+//	@Param		body	body		createApiKeyRequest	true	"Key request"
 //	@Success	201		{object}	domain.ApiKey
-//	@Failure	400		{object}	RequestError
-//	@Failure	500		{object}	RequestError
-//	@Router		/api-keys/ [post]
+//	@Router		/api-keys [post]
 func postCreateApiKey(c *gin.Context) {
-	var newApiKeyRequest domain.ApiKey
-	if err := c.BindJSON(&newApiKeyRequest); err != nil {
+	p := ExtractPrincipal(c)
+
+	var req createApiKeyRequest
+	if err := c.BindJSON(&req); err != nil {
+		return
+	}
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Name is required."})
 		return
 	}
 
-	randomKey, err := api_key.GenerateRandomKey()
+	requested := domain.NewScopeSet(req.Scopes...)
+	for scope := range requested {
+		if strings.Contains(scope, "*") {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"error": "Wildcard scopes are not permitted on user-issued keys.",
+			})
+			return
+		}
+	}
+	if !requested.IsSubsetOf(p.Role.Scopes()) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"error": "Requested scopes exceed your role's authority.",
+		})
+		return
+	}
+
+	plaintext, err := api_key.GenerateRandomKey()
 	if err != nil {
 		NewError(err).Abort(c)
 		return
 	}
 
-	// This key should always be random and unique. The SQL unique constraint should
-	// prevent non-unique keys from being accepted.
-	newApiKeyRequest.Key = randomKey
-
-	manager := ExtractApiKeyManager(c)
-	if err := manager.Create(&newApiKeyRequest); err != nil {
+	row := &domain.ApiKey{
+		UserID:  p.UserID,
+		Name:    req.Name,
+		Key:     plaintext,
+		Scopes:  requested,
+		Enabled: true,
+	}
+	if err := ExtractApiKeyManager(c).Create(row); err != nil {
 		NewError(err).Abort(c)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"api_key": newApiKeyRequest,
-	})
+	// Plaintext returned exactly once. The dashboard should show + copy
+	// it to the user, then forget it; the row keeps no plaintext copy
+	// readable via subsequent GETs (see getApiKey redaction).
+	c.JSON(http.StatusCreated, gin.H{"api_key": row})
 }
 
 // deleteApiKey godoc
 //
 //	@Tags		api_key
-//	@Accept		json
-//	@Produce	json
-//	@Param		key	path	string	true	"API Key Identifier"
+//	@Param		id	path	int	true	"API Key ID"
 //	@Success	204	"No Content"
-//	@Failure	400	{object}	RequestError
-//	@Failure	404	{object}	RequestError
-//	@Failure	500	{object}	RequestError
-//	@Router		/api-keys/{key} [delete]
+//	@Router		/api-keys/{id} [delete]
 func deleteApiKey(c *gin.Context) {
-	api_key_key := ExtractApiKeyKey(c)
-	manager := ExtractApiKeyManager(c)
-	if err := manager.Delete(api_key_key.Key); err != nil {
+	k := extractTargetApiKey(c)
+	if err := ExtractApiKeyManager(c).DeleteByID(k.ApiKeyID); err != nil {
+		NewError(err).Abort(c)
 		return
 	}
-
 	c.Status(http.StatusNoContent)
+}
+
+// extractTargetApiKey returns the API key loaded into context by
+// ApiKeyExists. Panics if the loader middleware was not mounted.
+func extractTargetApiKey(c *gin.Context) *domain.ApiKey {
+	v, ok := c.Get("apiKey")
+	if !ok {
+		panic("router/router_api_key: target api key not present; ApiKeyExists middleware missing?")
+	}
+	return v.(*domain.ApiKey)
 }

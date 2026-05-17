@@ -46,7 +46,9 @@ func getUser(c *gin.Context) {
 //	@Failure	500	{object}	RequestError
 //	@Router		/users/me/ [get]
 func getUserMe(c *gin.Context) {
+	p := ExtractPrincipal(c)
 	c.JSON(http.StatusOK, gin.H{
-		"me": ExtractUser(c),
+		"me":   p.User,
+		"role": p.Role,
 	})
 }

@@ -21,6 +21,7 @@ import (
 	"carbon/internal/api_key"
 	"carbon/internal/api_login_key"
 	"carbon/internal/client"
+	"carbon/internal/policy"
 	"carbon/internal/resource"
 	"carbon/internal/server"
 	"carbon/internal/user"
@@ -47,7 +48,6 @@ type ManagerGroup struct {
 	ClientManager      *client.Manager
 }
 
-type Role = domain.ApiKeyRole
 type ServerStatus = domain.ServerStatus
 
 // NewClient creates a new Gin router instance with all the routes and middleware
@@ -75,7 +75,9 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 		AttachUserManager(managers.UserManager),
 		AttachServerManager(managers.ServerManager),
 		AttachApiLoginKeyManager(managers.ApiLoginKeyManager),
-		AttachApiKeyManager(managers.ApiKeyManager))
+		AttachApiKeyManager(managers.ApiKeyManager),
+		AttachClientManager(managers.ClientManager),
+		AttachAuthorizer(policy.New()))
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(gin.LoggerWithFormatter(func(params gin.LogFormatterParams) string {
 		slog.Info("incoming request",
@@ -111,61 +113,52 @@ func NewClient(remote remote.Client, managers ManagerGroup) *gin.Engine {
 
 	auth := router.Group("/auth")
 	auth.POST("/login", postAuthLogin)
-	auth.POST("/logout", RequireAuthorization(), postAuthLogout)
+	auth.POST("/logout", RequireAuth(), postAuthLogout)
 	auth.POST("/refresh", postAuthRefresh)
 	auth.POST("/sessions/join",
-		RequireAuthorization(),
+		RequireAuth(),
 		postAuthSessionsJoin,
 	)
 	auth.GET("/sessions/:server/verify",
-		//RequireApiAuthorization(),
-		//RoleRequired(Role("user")),
+		RequireAuth(),
 		ServerExists(),
-		//RequireResourceOwnership(),
+		RequireCan(domain.ActionServerRead, "server"),
 		getAuthSessionsVerify,
 	)
 
-	router.GET("/users/me", RequireAuthorization(), getUserMe)
+	router.GET("/users/me", RequireAuth(), getUserMe)
 	router.GET("/users/:user", getUser)
 
 	router.GET("/servers", getAllServers)
 	router.GET("/servers/:server", ServerExists(), getServer)
 
-	router.POST("/servers", RequireApiAuthorization(), RoleRequired(Role("user")), postCreateServer)
+	router.POST("/servers",
+		RequireAuth(),
+		RequireCan(domain.ActionServerWrite, ""),
+		postCreateServer,
+	)
 
 	server := router.Group("/servers/:server")
 	server.Use(
-		RequireApiAuthorization(),
-		RoleRequired(Role("user")),
+		RequireAuth(),
 		ServerExists(),
-		RequireResourceOwnership(),
 	)
 	{
-		server.PUT("", putUpdateServer)
-		server.GET("/me", getServerMe)
-		server.PUT("/sync", putSyncServer)
-		server.PATCH("/power", patchServerPower)
+		server.PUT("", RequireCan(domain.ActionServerWrite, "server"), putUpdateServer)
+		server.PUT("/sync", RequireCan(domain.ActionServerWrite, "server"), putSyncServer)
+		server.PATCH("/power", RequireCan(domain.ActionServerWrite, "server"), patchServerPower)
 
-		server.GET("/clients", getAllServerClients)
-		server.GET("/clients/:client", getServerClient)
-		server.POST("/clients", postCreateServerClient)
+		server.GET("/clients", RequireCan(domain.ActionServerRead, "server"), getAllServerClients)
+		server.GET("/clients/:client", RequireCan(domain.ActionServerRead, "server"), getServerClient)
+		server.POST("/clients", RequireCan(domain.ActionServerWrite, "server"), postCreateServerClient)
 	}
 
-	client := router.Group("/clients")
-	client.Use(RoleRequired(Role("operator")))
+	apiKeys := router.Group("/api-keys", RequireAuth())
 	{
-		client.GET("")
-		client.GET("/:client")
-	}
-
-	api_key := router.Group("/api-keys")
-	api_key.Use(RequireApiAuthorization(), RoleRequired(Role("operator")))
-	{
-		api_key.POST("", postCreateApiKey)
-		api_key.GET("/:api_key", getApiKey, ApiKeyKeyExists())
-		api_key.GET("/users/:user", getUserApiKeys) // TODO: move this to users
-		api_key.GET("", getAllApiKeys)
-		api_key.DELETE("/:api_key", deleteApiKey, ApiKeyKeyExists())
+		apiKeys.GET("", RequireCan(domain.ActionApiKeyList, ""), getAllApiKeys)
+		apiKeys.POST("", RequireCan(domain.ActionApiKeyWrite, ""), postCreateApiKey)
+		apiKeys.GET("/:id", ApiKeyExists(), RequireCan(domain.ActionApiKeyRead, "apiKey"), getApiKey)
+		apiKeys.DELETE("/:id", ApiKeyExists(), RequireCan(domain.ActionApiKeyDelete, "apiKey"), deleteApiKey)
 	}
 
 	resources := router.Group("/resources")

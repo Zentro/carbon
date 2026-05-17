@@ -19,7 +19,6 @@ import (
 	"carbon/config"
 	"carbon/domain"
 	"carbon/remote"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -133,7 +132,14 @@ func postAuthLogin(c *gin.Context) {
 //	@Failure	500	{object}	RequestError
 //	@Router		/auth/logout/ [post]
 func postAuthLogout(c *gin.Context) {
-	if err := ExtractApiLoginKeyManager(c).Invalidate(ExtractApiLoginKey(c).ApiLoginKeyID); err != nil {
+	p := ExtractPrincipal(c)
+	if p.CredentialKind != domain.CredentialLogin {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "Logout is only meaningful for session credentials.",
+		})
+		return
+	}
+	if err := ExtractApiLoginKeyManager(c).Invalidate(uint(p.CredentialID)); err != nil {
 		NewError(err).Abort(c)
 		return
 	}
@@ -206,7 +212,7 @@ func postAuthRefresh(c *gin.Context) {
 //	@Failure	500		{object}	RequestError
 //	@Router		/auth/sessions/join [post]
 func postAuthSessionsJoin(c *gin.Context) {
-	user := ExtractUser(c)
+	p := ExtractPrincipal(c)
 	manager := ExtractServerManager(c)
 
 	var data struct {
@@ -229,7 +235,7 @@ func postAuthSessionsJoin(c *gin.Context) {
 	// can verify their session against us. The challenge should only
 	// last 10 seconds, and we should verify his claims against ours.
 	claims := UserAuthSessionChallengeClaims{
-		UserID:   user.UserID,
+		UserID:   p.UserID,
 		ServerID: server.ServerID.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(10 * time.Second)),
@@ -270,15 +276,12 @@ func getAuthSessionsVerify(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(data.Challenge)
-
 	claims := &UserAuthSessionChallengeClaims{}
 	challenge, err := jwt.ParseWithClaims(data.Challenge, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(config.Get().Secret), nil
 	})
 
 	if err != nil {
-		fmt.Println(err.Error())
 		NewError(err).Abort(c)
 		return
 	}

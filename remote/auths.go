@@ -25,7 +25,7 @@ func (c *client) ValidateUserAuthCredentials(ctx context.Context, data interface
 		formValues.Add(key, fmt.Sprintf("%v", value))
 	}
 
-	resp, httpErr := c.Post(ctx, "/bridge/auth", formValues, nil)
+	resp, httpErr := c.PostBridge(ctx, "/bridge/auth", formValues, nil)
 	if httpErr != nil {
 		return RawUserAuthResponse{}, httpErr
 	}

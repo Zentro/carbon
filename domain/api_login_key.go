@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"gorm.io/gorm"
 )
 
 // ApiLoginKey represens a high level definition of an API login key.
@@ -44,7 +45,7 @@ type ApiLoginKey struct {
 	RefreshKeyExpiresAt time.Time `gorm:"not null" json:"api_refresh_key_expires_at"`
 	// IP is the source of the request, if this does not match then this key should no longer be
 	// considered valid.
-	IP string `gorm:"not null" json:"ip_address"`
+	IP string `gorm:"not null" json:"-"`
 	// CreatedAt specifies the time of creation for this key.
 	// Automatically managed by GORM.
 	CreatedAt time.Time
@@ -53,7 +54,7 @@ type ApiLoginKey struct {
 	UpdatedAt time.Time
 	// DeletedAt specifies the time of soft deletion for this key.
 	// Automatically managed by GORM.
-	DeletedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 // ApiLoginClaims represents the claims used in the JWT for the API login key.

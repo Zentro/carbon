@@ -80,20 +80,10 @@ func (m *Manager) FindByHostAndPort(host string, port int) (*domain.Server, erro
 	return &server, nil
 }
 
-// FindByApiKeyID retrieves a server from the database based on its API key ID.
-// This is useful to check if an API key is already binded to a server.
-func (m *Manager) FindByApiKeyID(apiKeyID int) (*domain.Server, error) {
-	var server domain.Server
-	if err := m.db.Where("api_key_id = ?", apiKeyID).First(&server).Error; err != nil {
-		return nil, err
-	}
-	return &server, nil
-}
-
 // Collection retrieves all servers from the database.
 func (m *Manager) Collection() ([]*domain.Server, error) {
 	var servers []*domain.Server
-	if err := m.db.Find(&servers).Error; err != nil {
+	if err := m.db.Preload("Clients").Find(&servers).Error; err != nil {
 		return nil, err
 	}
 	return servers, nil

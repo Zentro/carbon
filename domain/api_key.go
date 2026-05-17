@@ -15,18 +15,35 @@
 
 package domain
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 // ApiKey represents a high level definition of an API key.
 type ApiKey struct {
 	// ApiKeyID is the primary key of the API key
 	ApiKeyID int `gorm:"primaryKey" json:"api_key_id,omitempty"`
 	// UserID references the user who the API key belongs to
-	UserID int `gorm:"not null" json:"api_key_user_id" binding:"required"`
+	UserID int `gorm:"not null;index" json:"api_key_user_id" binding:"required"`
+	// Name is a human-readable label for the key (e.g. "My laptop", "CI bot",
+	// "Server: foo"). Shown in the dashboard's key list. Optional.
+	Name string `gorm:"size:255" json:"name,omitempty"`
 	// Key is the actual API key string
-	Key string `gorm:"not null" json:"api_key_key,omitempty"`
-	// Role specifies the role associated with the API key
-	Role ApiKeyRole `gorm:"not null" json:"api_key_role,omitempty" binding:"required"`
+	Key string `gorm:"not null;uniqueIndex" json:"api_key_key,omitempty"`
+	// Scopes is the explicit capability set of this credential. At auth time
+	// the principal's effective scopes become user.Role.Scopes() ∩ Scopes,
+	// so a key can never grant authority its owner has lost. An empty
+	// Scopes is treated as "every scope the user's role grants" — i.e. an
+	// unbound personal key inherits the owner's full authority.
+	Scopes ScopeSet `gorm:"type:text" json:"scopes,omitempty"`
+	// TargetKind binds this key to a specific entity kind ("server", …).
+	// When set together with TargetID, the policy layer rejects any
+	// request that targets a different entity. Nil for unbound keys.
+	TargetKind *string `gorm:"size:32;index:idx_api_key_target,priority:1" json:"target_kind,omitempty"`
+	// TargetID is the bound entity's primary key as a string (UUID for
+	// servers). Must be set together with TargetKind.
+	TargetID *string `gorm:"size:64;index:idx_api_key_target,priority:2" json:"target_id,omitempty"`
 	// Enabled specifies whether the key is enabled or disabled.
 	Enabled bool `gorm:"not null" json:"enabled"`
 	// LastUsedAt specifies the last time this key was used.
@@ -39,35 +56,20 @@ type ApiKey struct {
 	UpdatedAt time.Time
 }
 
-const (
-	// _Operator represents an API key role for operators with elevated privileges
-	_Operator = "operator"
-	// _User represents an API key role for regular users with limited privileges
-	_User = "user"
-	//_Guest represents an API key role for guests with no privileges
-	_Guest = "guest"
-)
+// Kind implements Manageable.
+func (k *ApiKey) Kind() string { return "api_key" }
 
-// ApiKeyRole defines the role associated with an API key.
-type ApiKeyRole string
+// OwnerID implements Manageable. The owner of an API key is the user it
+// was issued to.
+func (k *ApiKey) OwnerID() int { return k.UserID }
 
-// IsValid checks whether the ApiKeyRole is valid.
-// A valid role is one of: operator, user, or guest.
-func (apiRole ApiKeyRole) IsValid() bool {
-	return apiRole == _Operator || apiRole == _Guest || apiRole == _User
-}
+// EntityID implements Manageable.
+func (k *ApiKey) EntityID() string { return strconv.Itoa(k.ApiKeyID) }
 
-// IsOperator checks whether the ApiKeyRole is an operator role.
-func (apiRole ApiKeyRole) IsOperator() bool {
-	return apiRole == _Operator
-}
-
-// IsGuest checks whether the ApiKeyRole is a guest role.
-func (apiRole ApiKeyRole) IsGuest() bool {
-	return apiRole == _Guest
-}
-
-// IsUser checks whether the ApiKeyRole is a user role.
-func (apiRole ApiKeyRole) IsUser() bool {
-	return apiRole == _User
+// IsBound reports whether the key is restricted to a specific entity. A
+// bound key authorizes only against its TargetKind/TargetID; an unbound
+// key acts on whatever the owner's role permits.
+func (k *ApiKey) IsBound() bool {
+	return k.TargetKind != nil && k.TargetID != nil &&
+		*k.TargetKind != "" && *k.TargetID != ""
 }

@@ -51,8 +51,32 @@ type Configuration struct {
 }
 
 type RemoteConfiguration struct {
+	// Location is the base URL of the remote XenForo instance (no trailing slash).
 	Location string `yaml:"location"`
-	Key      string `yaml:"key"`
+
+	// BridgeKey is the XenForo super-user API key. It is used ONLY for the
+	// /bridge/auth password-validation call, which requires a super-user key
+	// (the `bridge` and `auth` scopes are super-user-only). Do not use it for
+	// any other XF call.
+	BridgeKey string `yaml:"bridge_key"`
+
+	// DataKey is a non-super XF API key (User-type) used for all non-bridge
+	// calls — resource reads, user reads, etc. Should be tied to a service
+	// user with the minimal scopes Carbon needs: user:read, resource:read,
+	// resource_category:read, resource_rating:read.
+	DataKey string `yaml:"data_key"`
+
+	// OAuth holds confidential-client credentials for the carbon_api OAuth
+	// client registered at XF. Currently parked — XF does not implement the
+	// client_credentials grant, so these are not used for outbound reads.
+	// Reserved for future use by the token introspection path that will
+	// validate user OAuth tokens issued to other clients (the dashboard).
+	OAuth OAuthClientConfiguration `yaml:"oauth"`
+}
+
+type OAuthClientConfiguration struct {
+	ClientID     string `yaml:"client_id"`
+	ClientSecret string `yaml:"client_secret"`
 }
 
 type ApiConfiguration struct {

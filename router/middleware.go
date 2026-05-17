@@ -19,14 +19,13 @@ import (
 	"carbon/domain"
 	"carbon/internal/api_key"
 	"carbon/internal/api_login_key"
+	"carbon/internal/client"
 	"carbon/internal/resource"
 	"carbon/internal/server"
 	"carbon/internal/user"
 	"carbon/remote"
-	"fmt"
 	"net/http"
-	"strings"
-	"time"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -55,6 +54,13 @@ func AttachCorsHeaders() gin.HandlerFunc {
 func AttachApiKeyManager(m *api_key.Manager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("api_key_manager", m)
+		c.Next()
+	}
+}
+
+func AttachClientManager(m *client.Manager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set("client_manager", m)
 		c.Next()
 	}
 }
@@ -149,6 +155,13 @@ func ExtractApiLoginKeyManager(c *gin.Context) *api_login_key.Manager {
 	panic("router/middleware: api login key manager not present in context")
 }
 
+func ExtractClientManager(c *gin.Context) *client.Manager {
+	if v, ok := c.Get("client_manager"); ok {
+		return v.(*client.Manager)
+	}
+	panic("router/middleware: client manager not present in context")
+}
+
 // ResourceExists will ensure that the request resource exists in the cache.
 // Returns a 404 if it can't be located. If the resource is found it is set into
 // the request context.
@@ -190,20 +203,29 @@ func ServerExists() gin.HandlerFunc {
 	}
 }
 
-// ApiKeyKeyExists will ensure the API key exists in the database.
-func ApiKeyKeyExists() gin.HandlerFunc {
+// ApiKeyExists loads the API key identified by the :id URL parameter into
+// the request context under the key "apiKey". Aborts 404 if not found, 400
+// if the parameter is not a valid integer. Use as the loader before any
+// RequireCan(action, "apiKey") gate.
+func ApiKeyExists() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.Param("api_key") != "" {
-			var k *domain.ApiKey
-			manager := ExtractApiKeyManager(c)
-			api_key := c.Param("api_key")
-			k, err := manager.FindByKey(api_key)
-			if err != nil {
-				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "The requested resource could not be found."})
-				return
-			}
-			c.Set("apiKeyKey", k)
+		raw := c.Param("id")
+		if raw == "" {
+			c.Next()
+			return
 		}
+		id, err := strconv.Atoi(raw)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "API key id must be an integer."})
+			return
+		}
+		k, err := ExtractApiKeyManager(c).FindByID(id)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "The requested resource could not be found."})
+			return
+		}
+		c.Set("apiKey", k)
+		c.Next()
 	}
 }
 
@@ -227,191 +249,3 @@ func ExtractServer(c *gin.Context) *domain.Server {
 	return v.(*domain.Server)
 }
 
-func ExtractApiKey(c *gin.Context) *domain.ApiKey {
-	v, ok := c.Get("apiKey")
-	if !ok {
-		panic("router/middleware: cannot extract api key: not present in request context")
-	}
-	return v.(*domain.ApiKey)
-}
-
-func ExtractApiKeyKey(c *gin.Context) *domain.ApiKey {
-	v, ok := c.Get("apiKeyKey")
-	if !ok {
-		panic("router/middleware: cannot extract api key: not present in request context")
-	}
-	return v.(*domain.ApiKey)
-}
-
-// ExtractUser will return the user from the gin.Context or panic if it is
-// not present.
-func ExtractUser(c *gin.Context) domain.User {
-	v, ok := c.Get("user")
-	if !ok {
-		panic("router/middleware: cannot extract user: not present in request context")
-	}
-	return v.(domain.User)
-}
-
-// ExtractApiLoginKey will return the API login key from the gin.Context or panic if it
-// is not present.
-func ExtractApiLoginKey(c *gin.Context) *domain.ApiLoginKey {
-	v, ok := c.Get("apiLoginKey")
-	if !ok {
-		panic("router/middleware: cannot extract API login key: not present in request context")
-	}
-	return v.(*domain.ApiLoginKey)
-}
-
-// RequireApiAuthorization will only check if the proper API authentication
-// heads are present.
-func RequireApiAuthorization() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		key := strings.SplitN(c.GetHeader("Api-Authorization"), " ", 2)
-
-		if len(key) != 2 || key[0] != "Bearer" {
-			c.Header("WWW-Authenticate", "Bearer")
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "The required authorization heads were not present in the request.",
-			})
-
-			return
-		}
-
-		var r *domain.ApiKey
-		manager := ExtractApiKeyManager(c)
-		r, dbErr := manager.FindByKey(key[1])
-		if dbErr != nil {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "You are not authorized to access this endpoint.",
-			})
-
-			return
-		}
-
-		// Pass the role and an entire copy of the key further up the context.
-		c.Set("apiRole", r.Role)
-		c.Set("apiKey", r)
-	}
-}
-
-// RoleRequired will check if the required role matches the role present in the context.
-func RoleRequired(required Role) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		roleAny, ok := c.Get("apiRole")
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "The required authorization heads were not present in the request.",
-			})
-
-			return
-		}
-
-		// Assert the type from any to string.
-		roleStr := fmt.Sprintf("%v", roleAny)
-
-		// Change to type ApiKeyRole
-		role := Role(roleStr)
-
-		if !role.IsValid() {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "The role in the authorization heads could not be determined.",
-			})
-
-			return
-		}
-
-		if role.IsOperator() {
-			c.Next()
-			return
-		}
-
-		if role != required {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "You are not authorized to access this endpoint.",
-			})
-
-			return
-		}
-
-		c.Next()
-	}
-}
-
-// RequireAuthorization will only check if the proper authentication heads
-// are present.
-func RequireAuthorization() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		token := strings.SplitN(c.GetHeader("Authorization"), " ", 2)
-
-		if len(token) != 2 || token[0] != "Bearer" {
-			c.Header("WWW-Authenticate", "Bearer")
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "The required authorization heads were not present in the request.",
-			})
-
-			return
-		}
-
-		var r domain.ApiLoginKey
-		manager := ExtractApiLoginKeyManager(c)
-		r, dbErr := manager.FindByToken(token[1])
-		if dbErr != nil || time.Now().After(r.LoginKeyExpiresAt) {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "You are not authorized to access this resource.",
-			})
-
-			return
-		}
-
-		// if c.ClientIP() != r.IPAddress {
-		// 	NewError(ErrIpMismatch).Abort(c)
-		// 	return
-		// }
-
-		var u domain.User
-		u, httpErr := ExtractApiClient(c).GetUser(c, r.UserID)
-		if httpErr != nil {
-			NewError(httpErr).Abort(c)
-			return
-		}
-
-		// Pass up further along the context.
-		c.Set("user", u)
-		c.Set("token", r)
-
-		c.Next()
-	}
-}
-
-// RequireResourceOwnership will check if the requester has actual ownership
-// over the resource.
-func RequireResourceOwnership() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		_, ok := c.Get("apiKey")
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "The required authorization heads were not present in the request.",
-			})
-			return
-		}
-
-		// apiKey := apiKeyCtx.(*domain.ApiKey)
-		// s := ExtractServer(c)
-
-		// if !apiKey.Role.IsOperator() && s.OwnerID != int(apiKey.UserID) {
-		// 	c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-		// 		"error": "You are not authorized to access this resource.",
-		// 	})
-		// }
-	}
-}
-
-func ExtractAuthorization(c *gin.Context) string {
-	v, ok := c.Get("Authorization")
-	if !ok {
-		panic("router/middleware: cannot extract authorization token: not present in request context")
-	}
-	token, _ := v.(string)
-	return token
-}

@@ -60,6 +60,10 @@ func Initialize() (*gorm.DB, error) {
 		return nil, fmt.Errorf("auto migration failed: %w", err)
 	}
 
+	if err := dropLegacyApiKeyRoleColumn(db); err != nil {
+		return nil, fmt.Errorf("api_keys schema cleanup failed: %w", err)
+	}
+
 	if err := db.AutoMigrate(
 		&domain.ApiLoginKey{}, // independent
 	); err != nil {
@@ -67,9 +71,13 @@ func Initialize() (*gorm.DB, error) {
 	}
 
 	if err := db.AutoMigrate(
-		&domain.Server{}, // references ApiKey
+		&domain.Server{},
 	); err != nil {
 		return nil, fmt.Errorf("auto migration failed: %w", err)
+	}
+
+	if err := dropLegacyServerApiKeyColumn(db); err != nil {
+		return nil, fmt.Errorf("server schema cleanup failed: %w", err)
 	}
 
 	if err := db.AutoMigrate(
@@ -81,4 +89,38 @@ func Initialize() (*gorm.DB, error) {
 	slog.Info("database migrations completed")
 
 	return db, nil
+}
+
+// dropLegacyServerApiKeyColumn removes the now-unused servers.api_key_id
+// column and its associated unique index. Pre-bound-key schemas had a 1:1
+// server-to-key relationship; bound API keys live on the api_keys side
+// now (via target_kind/target_id). AutoMigrate doesn't drop columns on
+// its own, so we ask explicitly. Idempotent.
+func dropLegacyServerApiKeyColumn(db *gorm.DB) error {
+	mig := db.Migrator()
+	if !mig.HasColumn(&domain.Server{}, "api_key_id") {
+		return nil
+	}
+	// MySQL drops associated indexes when the column goes; no explicit
+	// DropIndex call needed.
+	if err := mig.DropColumn(&domain.Server{}, "api_key_id"); err != nil {
+		return err
+	}
+	slog.Info("dropped legacy servers.api_key_id column")
+	return nil
+}
+
+// dropLegacyApiKeyRoleColumn removes the now-unused api_keys.role column.
+// Roles live on the User record (XF IsStaff -> admin); per-key authority
+// lives in api_keys.scopes. Idempotent.
+func dropLegacyApiKeyRoleColumn(db *gorm.DB) error {
+	mig := db.Migrator()
+	if !mig.HasColumn(&domain.ApiKey{}, "role") {
+		return nil
+	}
+	if err := mig.DropColumn(&domain.ApiKey{}, "role"); err != nil {
+		return err
+	}
+	slog.Info("dropped legacy api_keys.role column")
+	return nil
 }

@@ -31,24 +31,32 @@ func NewManager(ctx context.Context, db *gorm.DB) (*Manager, error) {
 	return m, nil
 }
 
-func (m *Manager) FindByIDForServer(s *domain.Server, id int) (*domain.Client, error) {
-	var c domain.Client
-	if err := m.db.Model(&s).Preload("Clients", "id = ?", id).First(&c).Error; err != nil {
+// Create adds a new client to a server in the database.
+func (m *Manager) Create(c *domain.Client, s *domain.Server) error {
+	if err := m.db.Model(&s).Association("Clients").Append(&c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Manager) Update(c *domain.Client) error {
+	if err := m.db.Save(&c).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// CollectionByServerID retrieves all clients associated with a specific server ID.
+func (m *Manager) CollectionByServerID(server_id string) ([]domain.Client, error) {
+	var c []domain.Client
+	if err := m.db.Where("server_id = ?", server_id).Find(&c).Error; err != nil {
 		return nil, err
 	}
 
-	return &c, nil
+	return c, nil
 }
 
-func (m *Manager) CollectionForServer(sid int) (*domain.Client, error) {
-	var c domain.Client
-	if err := m.db.Where("server_id = ?", sid).Find(&c).Error; err != nil {
-		return nil, err
-	}
-
-	return &c, nil
-}
-
+// FindByID retrieves a client from the database based on its ID.
 func (m *Manager) FindByID(id int) (*domain.Client, error) {
 	var c domain.Client
 	if err := m.db.First(&c, id).Error; err != nil {
@@ -57,6 +65,7 @@ func (m *Manager) FindByID(id int) (*domain.Client, error) {
 	return &c, nil
 }
 
+// Collection retrieves all clients from the database.
 func (m *Manager) Collection() ([]*domain.Client, error) {
 	var c []*domain.Client
 	if err := m.db.Find(&c).Error; err != nil {
@@ -65,6 +74,7 @@ func (m *Manager) Collection() ([]*domain.Client, error) {
 	return c, nil
 }
 
+// Delete removes a client from the database based on its ID.
 func (m *Manager) Delete(id int) error {
 	if err := m.db.Delete(&domain.Client{}, id).Error; err != nil {
 		return err

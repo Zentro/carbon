@@ -87,7 +87,11 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 	cfg := config.Get()
 	ctx := cmd.Context()
 
-	remoteClient := remote.NewClient(cfg.Remote.Location, cfg.Remote.Key)
+	remoteClient := remote.NewClient(
+		cfg.Remote.Location,
+		cfg.Remote.BridgeKey,
+		cfg.Remote.DataKey,
+	)
 
 	database, err := mysql.Initialize()
 	if err != nil {
